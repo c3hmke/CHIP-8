@@ -8,4 +8,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Include="bin\Debug\net9.0\HeartMonitor.ch8" />
+    <None Include="obj\Debug\net9.0\HeartMonitor.ch8" />
+  </ItemGroup>
+
 </Project>
