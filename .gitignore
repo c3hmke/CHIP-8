@@ -9,6 +9,7 @@
 
 # Tooling & Editors
 .idea/
+.vs/
 
 # Build results
 [Dd]ebug/
@@ -36,7 +37,6 @@ ScaffoldingReadMe.txt
 
 # NuGet Packages
 *.nupkg
-# NuGet Symbol Packages
 *.snupkg
 
 # Others

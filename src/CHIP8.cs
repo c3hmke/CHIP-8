@@ -1,3 +1,5 @@
+using System.ComponentModel.Design;
+
 namespace CHIP_8;
 
 /// <summary>
@@ -85,7 +87,177 @@ namespace CHIP_8;
 /// |  FX65  | mem   | reg_load(Vx, &I)  | Fills V0 -> VX from memory starting at address I; I remains unchanged.      |
 /// --------------------------------------------------------------------------------------------------------------------
 /// </summary>
-public class CHIP8
+public class CHIP8 ()
 {
-    
+    /// Define the properties of the VirtualMachine so that it can be correctly simulated.
+    public byte[] RAM = new byte[4096];         // 4Kb Memory
+    public byte[] V = new byte[16];             // Registers [V0 -> VF]
+    public ushort I = 0;                        // Address register with 16-bits
+    public ushort PC = 0;                       // Program Counter
+    public Stack<ushort> Stack = new();         // Stack (currently 'unlimited')
+    public byte DelayTimer;                     // DelayTimer used for timed events
+    public byte SoundTimer;                     // SoundTimer used for beep
+    public byte Keyboard;                       // Use the lower4 bits for 16 keys
+    public byte[] Display = new byte[64 * 32];  // 64x32 display (only LSB is relevant)
+
+    /// Random number generator used to randomize some events
+    private readonly Random _rng = new (Environment.TickCount);
+
+    /// Used to block and wait for input from the Keyboard
+    private bool _awaitingInput = false;
+
+    ///<summary> Execute a step in the Program (execute the next opcode in memory) </summary>
+    public void Step(ushort opcode) // TODO: opcodes passed in for debug
+    {
+        if (_awaitingInput)
+        {
+            V[(opcode & 0x0F00) >> 8] = Keyboard;
+            return;
+        }
+
+        /// opcodes are grouped by the first 4 bits, switch on that.
+        switch ((ushort)(opcode & 0xF000))
+        {
+            case 0x0000:
+                switch (opcode)
+                {
+                    case 0x00E0: for (var i = 0; i < Display.Length; i++) Display[i] = 0; break;
+                    case 0x00EE: PC = Stack.Pop(); break;
+                    default: throw new Exception($"Unsupported opcode {opcode:x4}");
+                }
+                break;
+            case 0x1000: // ( 1NNN )
+                PC = (ushort)(opcode & 0x0FFF);
+                break;
+            case 0x2000: // ( 2NNN )
+                Stack.Push(PC);
+                PC = (ushort)(opcode & 0x0FFF);
+                break;
+            case 0x3000: // ( 3XNN )
+                if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) PC += 2;
+                break;
+            case 0x4000: // ( 4XNN )
+                if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) PC += 2;
+                break;
+            case 0x5000: // ( 5XY0 )
+                if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4]) PC += 2;
+                break;
+            case 0x6000: // ( 6XNN )
+                V[(opcode & 0x0F00) >> 8] = (byte)(opcode & 0x00FF);
+                break;
+            case 0x7000: // ( 7XNN )
+                V[(opcode & 0x0F00) >> 8] += (byte)(opcode & 0x00FF);
+                break;
+
+            case 0x8000: // (ALU in 8 range, switches on lowest 4-bits)
+                int vx = (opcode & 0x0F00) >> 8;
+                int vy = (opcode & 0x00F0) >> 4;
+                switch (opcode & 0x000F)
+                {
+                    case 0: V[vx] = V[vy]; break;
+                    case 1: V[vx] = (byte)(V[vx] | V[vy]); break;
+                    case 2: V[vx] = (byte)(V[vx] & V[vy]); break;
+                    case 3: V[vx] = (byte)(V[vx] ^ V[vy]); break;
+                    case 4:
+                        V[15] = (byte)(V[vx] + V[vy] > 255 ? 1 : 0);
+                        V[vx] = (byte)((V[vx] + V[vy]) & 0x000F);
+                        break;
+                    case 5:
+                        V[15] = (byte)(V[vx] > V[vy] ? 1 : 0);
+                        V[vx] = (byte)((V[vx] - V[vy]) & 0x00FF);
+                        break;
+                    case 6:
+                        V[15] = (byte)(V[vx] & 0x0001);
+                        V[vx] = (byte)(V[vx] >> 1);
+                        break;
+                    case 7:
+                        V[15] = (byte)(V[vy] > V[vx] ? 1 : 0);
+                        V[vx] = (byte)((V[vy] - V[vx]) & 0x00FF);
+                        break;
+                    case 14:
+                        V[15] = (byte)(((V[vx] & 0x80) == 0x80) ? 1 : 0);
+                        V[vx] = (byte)(V[vx] << 1);
+                        break;
+                    default: throw new Exception($"Unsupported opcode {opcode:x4}");
+
+                }
+                break;
+
+            case 0x9000: // ( 9XY0 )
+                if (V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]) PC += 2;
+                break;
+            case 0xA000: // ( ANNN )
+                I = (ushort)(opcode & 0x0FFF);
+                break;
+            case 0xB000: // ( BNNN )
+                PC = (ushort)((opcode & 0x0FFF) + V[0]);
+                break;
+            case 0xC000: // ( CXNN )
+                V[(opcode & 0x0F00) >> 8] = (byte)(_rng.Next() & (opcode & 0x0FF));
+                break;
+            
+            case 0xD000: // ( DXYN )
+                int x = V[(opcode & 0x0F00) >> 8];                      // x coordinate
+                int y = V[(opcode & 0x00F0) >> 4];                      // y coordinate
+                int n = opcode & 0x000F;                                // n lines to draw
+
+                V[15] = 0;                                              // pixel flip flag
+
+                for (int i = 0; i < n; i++)                             // loop over each row
+                {
+                    byte mem = RAM[I + i];                              // the location drawing starts
+                    for (int j = 0; j < 8; j++)                         // loop over each of the 8-bits
+                    {   
+                        byte px = (byte)((mem >> (7 - j)) & 0x01);      // the pixel we want to draw
+
+                        int  di = x + j + (y + i) * 64;                 // index on the display grid
+                        if (di > 2047) continue;                        // ignoring any out of bounds
+                        
+                        if (px == 1 && Display[di] != 0) V[15] = 1;     // if any pixels will flip off set flag
+                        Display[di] = (byte)(Display[di] ^ px);         // flip the pixel on the display
+                    }
+                }
+                break;
+
+            case 0xE000: // Keyboard input opcodes in E, range
+                switch (opcode & 0x00FF)
+                {
+                    case 0x009E:
+                        if (((Keyboard >> V[(opcode & 0x0F00) >> 8]) & 0x01) == 0x01) PC += 2;
+                        break;
+                    case 0x00A1:
+                        if (((Keyboard >> V[(opcode & 0x0F00) >> 8]) & 0x01) != 0x01) PC += 2;
+                        break;
+
+                    default: throw new Exception($"Unsupported opcode {opcode:x4}");
+                }
+                break;
+
+            case 0xF000: // Additional opcodes switching on lowest byte
+                int tx = (opcode & 0x0F00) >> 8;
+                switch (opcode & 0x00FF)
+                {
+                    case 0x07: V[tx] = DelayTimer; break;
+                    case 0x0A: _awaitingInput = true; break;
+                    case 0x15: DelayTimer = V[tx]; break;
+                    case 0x18: SoundTimer = V[tx]; break;
+                    case 0x1E: I = (ushort)(I + V[tx]); break;
+                    case 0x29: I = (ushort)(V[tx * 5]); break;
+                    case 0x33:
+                        RAM[I]     = (byte)(V[tx] / 100);
+                        RAM[I + 1] = (byte)((V[tx] % 100) / 10);
+                        RAM[I + 2] = (byte)(V[tx % 10]);
+                        break;
+                    case 0x55:
+                        for (int i = 0; i <= tx; i++) RAM[I + i] = V[i];
+                        break;
+                    case 0x65:
+                        for (int i = 0; i <= tx; i++) V[i] = RAM[I + i];
+                        break;
+                }
+                break;
+
+            default: throw new Exception($"Unsupported opcode {opcode:x4}");
+        }
+    }
 }
