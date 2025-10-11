@@ -106,17 +106,32 @@ public class CHIP8 ()
     /// Used to block and wait for input from the Keyboard
     private bool _awaitingInput = false;
 
-    ///<summary> Execute a step in the Program (execute the next opcode in memory) </summary>
-    public void Step(ushort opcode) // TODO: opcodes passed in for debug
+    /// Load a program into RAM to be executed by the emulator
+    public void LoadProgram(byte[] program)
     {
-        if (_awaitingInput)
+        RAM = new byte[4096];   // clear memory
+        PC = 512;               // set PC to start locations
+
+        // Load in the program passed to this function
+        for (int i = 0; i < program.Length; i++)
+            RAM[512 + i] = program[i];
+    }
+
+    ///<summary> Execute a step in the Program (execute the next opcode in memory) </summary>
+    public void Step()
+    {
+        ushort opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
+
+        if (_awaitingInput)                 // block if awaiting input
         {
             V[(opcode & 0x0F00) >> 8] = Keyboard;
             return;
         }
 
+        PC += 2;                            // increment the program counter
+
         /// opcodes are grouped by the first 4 bits, switch on that.
-        switch ((ushort)(opcode & 0xF000))
+        switch ((ushort)(opcode & 0xF000))  // then execute the opcode
         {
             case 0x0000:
                 switch (opcode)
@@ -238,7 +253,7 @@ public class CHIP8 ()
                 switch (opcode & 0x00FF)
                 {
                     case 0x07: V[tx] = DelayTimer; break;
-                    case 0x0A: _awaitingInput = true; break;
+                    case 0x0A: _awaitingInput = true; PC -= 2; break;
                     case 0x15: DelayTimer = V[tx]; break;
                     case 0x18: SoundTimer = V[tx]; break;
                     case 0x1E: I = (ushort)(I + V[tx]); break;
@@ -258,6 +273,20 @@ public class CHIP8 ()
                 break;
 
             default: throw new Exception($"Unsupported opcode {opcode:x4}");
+        }
+    }
+
+    public void Draw()
+    {
+        Console.Clear();
+        Console.SetCursorPosition(0, 0);
+        for (int y = 0; y < 32; y++)
+        {
+            for (int x = 0; x < 64; x++)
+            {
+                Console.Write(Display[x + y * 64] != 0 ? "*" : " "); 
+            }
+            Console.WriteLine();
         }
     }
 }
