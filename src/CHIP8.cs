@@ -106,17 +106,34 @@ public class CHIP8 ()
     /// Used to block and wait for input from the Keyboard
     private bool _awaitingInput = false;
 
-    ///<summary> Execute a step in the Program (execute the next opcode in memory) </summary>
-    public void Step(ushort opcode) // TODO: opcodes passed in for debug
+    /// Load a program into RAM to be executed by the emulator
+    public void LoadProgram(ushort[] program)
     {
-        if (_awaitingInput)
+        RAM = new byte[4096]; // clear the RAM when loading a new program
+        for (int i = 0; i < program.Length; i++)
+        {
+            // load the program into RAM starting at location 512, 2 bytes at a time
+            RAM[512 + i * 2] = (byte)((program[i] & 0xFF00) >> 8);
+            RAM[513 + i * 2] = (byte)(program[i] & 0x00FF);
+        }
+        PC = 512;
+    }
+
+    ///<summary> Execute a step in the Program (execute the next opcode in memory) </summary>
+    public void Step()
+    {
+        ushort opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
+
+        if (_awaitingInput)                 // block if awaiting input
         {
             V[(opcode & 0x0F00) >> 8] = Keyboard;
             return;
         }
 
+        PC += 2;                            // increment the program counter
+
         /// opcodes are grouped by the first 4 bits, switch on that.
-        switch ((ushort)(opcode & 0xF000))
+        switch ((ushort)(opcode & 0xF000))  // then execute the opcode
         {
             case 0x0000:
                 switch (opcode)
@@ -238,7 +255,7 @@ public class CHIP8 ()
                 switch (opcode & 0x00FF)
                 {
                     case 0x07: V[tx] = DelayTimer; break;
-                    case 0x0A: _awaitingInput = true; break;
+                    case 0x0A: _awaitingInput = true; PC -= 2; break;
                     case 0x15: DelayTimer = V[tx]; break;
                     case 0x18: SoundTimer = V[tx]; break;
                     case 0x1E: I = (ushort)(I + V[tx]); break;
