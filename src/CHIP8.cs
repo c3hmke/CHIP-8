@@ -232,6 +232,7 @@ public class CHIP8 ()
                         Display[di] = (byte)(Display[di] ^ px);         // flip the pixel on the display
                     }
                 }
+                DrawDisplay();
                 break;
 
             case 0xE000: // Keyboard input opcodes in E, range
@@ -276,17 +277,19 @@ public class CHIP8 ()
         }
     }
 
-    public void Draw()
+    public void DrawDisplay()
     {
         Console.Clear();
         Console.SetCursorPosition(0, 0);
         for (int y = 0; y < 32; y++)
         {
+            string line = "";
             for (int x = 0; x < 64; x++)
             {
-                Console.Write(Display[x + y * 64] != 0 ? "*" : " "); 
+                line += (Display[x + y * 64] != 0) ? "*" : " "; 
             }
-            Console.WriteLine();
+            Console.WriteLine(line);
         }
+        Thread.Sleep(5);
     }
 }
