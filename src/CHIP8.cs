@@ -98,9 +98,11 @@ public class CHIP8 ()
     public Stack<ushort> Stack = new();         // Stack (currently 'unlimited')
     public byte DelayTimer;                     // DelayTimer used for timed events
     public byte SoundTimer;                     // SoundTimer used for beep
-    private Stopwatch Clock = new Stopwatch();  // Used to run the clock for timed events
     public byte Keyboard;                       // Use the lower4 bits for 16 keys
     public byte[] Display = new byte[64 * 32];  // 64x32 display (only LSB is relevant)
+    
+    private Stopwatch Clock = new Stopwatch();  // Used to run the clock for timed events
+    private readonly int _ticksPer60hz = (int)(Stopwatch.Frequency * 0.016);
 
     /// Random number generator used to randomize some events
     private readonly Random _rng = new (Environment.TickCount);
@@ -151,7 +153,7 @@ public class CHIP8 ()
     public void Step()
     {
         if (!Clock.IsRunning) Clock.Start();
-        if (Clock.ElapsedMilliseconds > 16) // 60Hz rate
+        if (Clock.ElapsedTicks > _ticksPer60hz)
         {
             if (DelayTimer > 0) DelayTimer--;
             if (SoundTimer > 0) SoundTimer--;
