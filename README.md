@@ -11,3 +11,7 @@ Some references:
 - [Wikipedia](https://en.wikipedia.org/wiki/CHIP-8)
 - [Cowgod's Technical Reference v1.0](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#3.0) 
 - [Mastering CHIP-8](https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Technical-Reference#instruction-set)
+
+---
+
+ROMS curtosy of [Zophar](https://www.zophar.net/pdroms/chip8/chip-8-games-pack.html)
