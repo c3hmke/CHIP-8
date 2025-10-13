@@ -7,7 +7,7 @@ public static class Program
     public static void Main(string[] args)
     {
         var chip8 = new CHIP8();
-        using (var reader = new BinaryReader(new FileStream("../../../ROMs/MISSILE", FileMode.Open)))
+        using (var reader = new BinaryReader(new FileStream("../../../ROMs/TETRIS", FileMode.Open)))
         {
             List<byte> program = [];
             while (reader.BaseStream.Position != reader.BaseStream.Length - 1)

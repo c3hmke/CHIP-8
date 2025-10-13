@@ -113,10 +113,38 @@ public class CHIP8 ()
     {
         RAM = new byte[4096];   // clear memory
         PC = 512;               // set PC to start locations
+        InitFont();             // Load the built-in font into memory
 
         // Load in the program passed to this function
         for (int i = 0; i < program.Length; i++)
             RAM[512 + i] = program[i];
+    }
+
+    /// Initialize the built in font, storing it in lower portions of memory unused by programs:
+    /// Programs may also refer to a group of sprites representing the hexadecimal digits 0 through F
+    /// These sprites are 5 bytes long, or 8x5 pixels. The data should be stored in the interpreter 
+    /// area of Chip-8 memory (0x000 to 0x1FF). - Cowgod
+    private void InitFont()
+    {
+        byte[] characters = { 
+            0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
+            0x20, 0x60, 0x20, 0x20, 0x70,   // 1
+            0xF0, 0x10, 0xF0, 0x80, 0xF0,   // 2
+            0xF0, 0x10, 0xF0, 0x10, 0xF0,   // 3
+            0x90, 0x90, 0xF0, 0x10, 0x10,   // 4
+            0xF0, 0x80, 0xF0, 0x10, 0xF0,   // 5
+            0xF0, 0x80, 0xF0, 0x90, 0xF0,   // 6
+            0xF0, 0x10, 0x20, 0x40, 0x40,   // 7
+            0xF0, 0x90, 0xF0, 0x90, 0xF0,   // 8
+            0xF0, 0x90, 0xF0, 0x10, 0xF0,   // 9
+            0xF0, 0x90, 0xF0, 0x90, 0x90,   // A
+            0xE0, 0x90, 0xE0, 0x90, 0xE0,   // B
+            0xF0, 0x80, 0x80, 0x80, 0xF0,   // C
+            0xE0, 0x90, 0x90, 0x90, 0xE0,   // D
+            0xF0, 0x80, 0xF0, 0x80, 0xF0,   // E
+            0xF0, 0x80, 0xF0, 0x80, 0x80    // F
+        };
+        Array.Copy(characters, RAM, characters.Length);
     }
 
     ///<summary> Execute a step in the Program (execute the next opcode in memory) </summary>
