@@ -1,4 +1,5 @@
 using System.ComponentModel.Design;
+using System.Diagnostics;
 
 namespace CHIP_8;
 
@@ -97,6 +98,7 @@ public class CHIP8 ()
     public Stack<ushort> Stack = new();         // Stack (currently 'unlimited')
     public byte DelayTimer;                     // DelayTimer used for timed events
     public byte SoundTimer;                     // SoundTimer used for beep
+    private Stopwatch Clock = new Stopwatch();  // Used to run the clock for timed events
     public byte Keyboard;                       // Use the lower4 bits for 16 keys
     public byte[] Display = new byte[64 * 32];  // 64x32 display (only LSB is relevant)
 
@@ -120,6 +122,15 @@ public class CHIP8 ()
     ///<summary> Execute a step in the Program (execute the next opcode in memory) </summary>
     public void Step()
     {
+        if (!Clock.IsRunning) Clock.Start();
+        if (Clock.ElapsedMilliseconds > 16) // 60Hz rate
+        {
+            if (DelayTimer > 0) DelayTimer--;
+            if (SoundTimer > 0) SoundTimer--;
+            Clock.Restart();
+        }
+
+
         ushort opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
 
         if (_awaitingInput)                 // block if awaiting input
