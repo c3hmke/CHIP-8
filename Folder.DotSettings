@@ -1,7 +1,14 @@
-﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+﻿<wpf:ResourceDictionary
+        xml:space="preserve"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="clr-namespace:System;assembly=mscorlib"
+        xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml"
+        xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=CHIP/@EntryIndexedValue">CHIP</s:String>
-	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=RAM/@EntryIndexedValue">RAM</s:String>
-	<s:Boolean x:Key="/Default/UserDictionary/Words/=annn/@EntryIndexedValue">True</s:Boolean>
+    <s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=RAM/@EntryIndexedValue">RAM</s:String>
+    <s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=SDL/@EntryIndexedValue">SDL</s:String>
+    <s:Boolean x:Key="/Default/UserDictionary/Words/=annn/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=assig/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=bitop/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=bnnn/@EntryIndexedValue">True</s:Boolean>
@@ -11,4 +18,5 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=dxyn/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=keyop/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=onnn/@EntryIndexedValue">True</s:Boolean>
-	<s:Boolean x:Key="/Default/UserDictionary/Words/=xor_0027d/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=xor_0027d/@EntryIndexedValue">True</s:Boolean>
+</wpf:ResourceDictionary>

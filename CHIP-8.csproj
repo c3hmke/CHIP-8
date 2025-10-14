@@ -13,4 +13,8 @@
     <None Include="obj\Debug\net9.0\HeartMonitor.ch8" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
+  </ItemGroup>
+
 </Project>

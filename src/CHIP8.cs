@@ -99,9 +99,9 @@ public class CHIP8 ()
     public byte DelayTimer;                     // DelayTimer used for timed events
     public byte SoundTimer;                     // SoundTimer used for beep
     public byte Keyboard;                       // Use the lower4 bits for 16 keys
-    public byte[] Display = new byte[64 * 32];  // 64x32 display (only LSB is relevant)
+    public uint[] Display = new uint[64 * 32];  // 64x32 display
     
-    private Stopwatch Clock = new Stopwatch();  // Used to run the clock for timed events
+    private Stopwatch Clock = new();            // Used to run the clock for timed events
     private readonly int _ticksPer60hz = (int)(Stopwatch.Frequency * 0.016);
 
     /// Random number generator used to randomize some events
@@ -270,7 +270,8 @@ public class CHIP8 ()
                         if (di > 2047) continue;                        // ignoring any out of bounds
                         
                         if (px == 1 && Display[di] != 0) V[15] = 1;     // if any pixels will flip off set flag
-                        Display[di] = (byte)(Display[di] ^ px);         // flip the pixel on the display
+                        Display[di] = (Display[di] != 0 && px == 0) || (Display[di] == 0 && px == 1)
+                            ? 0xFFFFFFFF : 0;                           // flip the pixel on the display
                     }
                 }
                 DrawDisplay();
