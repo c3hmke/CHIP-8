@@ -97,7 +97,7 @@ public class CHIP8 ()
     public Stack<ushort> Stack = new();         // Stack (currently 'unlimited')
     public byte DelayTimer;                     // DelayTimer used for timed events
     public byte SoundTimer;                     // SoundTimer used for beep
-    public byte Keyboard;                       // Use the lower4 bits for 16 keys
+    public ushort Keyboard;                     // Use the lower4 bits for 16 keys
     public uint[] Display = new uint[64 * 32];  // 64x32 display
     
     /// Clock used for functionality of timers
@@ -140,7 +140,8 @@ public class CHIP8 ()
         /// Handle any input
         if (_awaitingInput)
         {
-            V[(opcode & 0x0F00) >> 8] = Keyboard;
+            //V[(opcode & 0x0F00) >> 8] = Keyboard;
+            throw new Exception("test");
             return;
         }
         
