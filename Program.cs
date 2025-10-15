@@ -58,6 +58,7 @@ public static class Program
             SDL.SDL_RenderClear(renderer);
             SDL.SDL_RenderCopy(renderer, SDLTexture, 0, 0);
             SDL.SDL_RenderPresent(renderer);
+            Thread.Sleep(1);
         }
     }
 }

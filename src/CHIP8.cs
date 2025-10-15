@@ -1,4 +1,3 @@
-using System.ComponentModel.Design;
 using System.Diagnostics;
 
 namespace CHIP_8;
@@ -101,7 +100,8 @@ public class CHIP8 ()
     public byte Keyboard;                       // Use the lower4 bits for 16 keys
     public uint[] Display = new uint[64 * 32];  // 64x32 display
     
-    private Stopwatch Clock = new();            // Used to run the clock for timed events
+    /// Clock used for functionality of timers
+    private readonly Stopwatch _clock = new();
     private readonly int _ticksPer60hz = (int)(Stopwatch.Frequency * 0.016);
 
     /// Random number generator used to randomize some events
@@ -122,62 +122,36 @@ public class CHIP8 ()
             RAM[512 + i] = program[i];
     }
 
-    /// Initialize the built in font, storing it in lower portions of memory unused by programs:
-    /// Programs may also refer to a group of sprites representing the hexadecimal digits 0 through F
-    /// These sprites are 5 bytes long, or 8x5 pixels. The data should be stored in the interpreter 
-    /// area of Chip-8 memory (0x000 to 0x1FF). - Cowgod
-    private void InitFont()
-    {
-        byte[] characters = { 
-            0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
-            0x20, 0x60, 0x20, 0x20, 0x70,   // 1
-            0xF0, 0x10, 0xF0, 0x80, 0xF0,   // 2
-            0xF0, 0x10, 0xF0, 0x10, 0xF0,   // 3
-            0x90, 0x90, 0xF0, 0x10, 0x10,   // 4
-            0xF0, 0x80, 0xF0, 0x10, 0xF0,   // 5
-            0xF0, 0x80, 0xF0, 0x90, 0xF0,   // 6
-            0xF0, 0x10, 0x20, 0x40, 0x40,   // 7
-            0xF0, 0x90, 0xF0, 0x90, 0xF0,   // 8
-            0xF0, 0x90, 0xF0, 0x10, 0xF0,   // 9
-            0xF0, 0x90, 0xF0, 0x90, 0x90,   // A
-            0xE0, 0x90, 0xE0, 0x90, 0xE0,   // B
-            0xF0, 0x80, 0x80, 0x80, 0xF0,   // C
-            0xE0, 0x90, 0x90, 0x90, 0xE0,   // D
-            0xF0, 0x80, 0xF0, 0x80, 0xF0,   // E
-            0xF0, 0x80, 0xF0, 0x80, 0x80    // F
-        };
-        Array.Copy(characters, RAM, characters.Length);
-    }
-
     ///<summary> Execute a step in the Program (execute the next opcode in memory) </summary>
     public void Step()
     {
-        if (!Clock.IsRunning) Clock.Start();
-        if (Clock.ElapsedTicks > _ticksPer60hz)
+        /// Handle the system clock timers
+        if (!_clock.IsRunning) _clock.Start();
+        if (_clock.ElapsedTicks > _ticksPer60hz)
         {
             if (DelayTimer > 0) DelayTimer--;
             if (SoundTimer > 0) SoundTimer--;
-            Clock.Restart();
+            _clock.Restart();
         }
-
-
+        
+        /// Get the opcode
         ushort opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
 
-        if (_awaitingInput)                 // block if awaiting input
+        /// Handle any input
+        if (_awaitingInput)
         {
             V[(opcode & 0x0F00) >> 8] = Keyboard;
             return;
         }
-
-        PC += 2;                            // increment the program counter
-
-        /// opcodes are grouped by the first 4 bits, switch on that.
+        
+        /// Increment the ProgramCounter and execute the opcode
+        PC += 2;
         switch ((ushort)(opcode & 0xF000))  // then execute the opcode
         {
             case 0x0000:
                 switch (opcode)
                 {
-                    case 0x00E0: for (var i = 0; i < Display.Length; i++) Display[i] = 0; break;
+                    case 0x00E0: for (int i = 0; i < Display.Length; i++) Display[i] = 0; break;
                     case 0x00EE: PC = Stack.Pop(); break;
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
                 }
@@ -216,7 +190,7 @@ public class CHIP8 ()
                     case 3: V[vx] = (byte)(V[vx] ^ V[vy]); break;
                     case 4:
                         V[15] = (byte)(V[vx] + V[vy] > 255 ? 1 : 0);
-                        V[vx] = (byte)((V[vx] + V[vy]) & 0x000F);
+                        V[vx] = (byte)((V[vx] + V[vy]) & 0x00FF);
                         break;
                     case 5:
                         V[15] = (byte)(V[vx] > V[vy] ? 1 : 0);
@@ -249,7 +223,7 @@ public class CHIP8 ()
                 PC = (ushort)((opcode & 0x0FFF) + V[0]);
                 break;
             case 0xC000: // ( CXNN )
-                V[(opcode & 0x0F00) >> 8] = (byte)(_rng.Next() & (opcode & 0x0FF));
+                V[(opcode & 0x0F00) >> 8] = (byte)(_rng.Next() & (opcode & 0x00FF));
                 break;
             
             case 0xD000: // ( DXYN )
@@ -265,20 +239,21 @@ public class CHIP8 ()
                     for (int j = 0; j < 8; j++)                         // loop over each of the 8-bits
                     {   
                         byte px = (byte)((mem >> (7 - j)) & 0x01);      // the pixel we want to draw
-
                         int  di = x + j + (y + i) * 64;                 // index on the display grid
+                        
                         if (di > 2047) continue;                        // ignoring any out of bounds
                         
                         if (px == 1 && Display[di] != 0) V[15] = 1;     // if any pixels will flip off set flag
-                        Display[di] = (Display[di] != 0 && px == 0) || (Display[di] == 0 && px == 1)
-                            ? 0xFFFFFFFF : 0;                           // flip the pixel on the display
+                        Display[di]                                     // flip the pixel on the display
+                            = (Display[di] != 0 && px == 0) || (Display[di] == 0 && px == 1) 
+                            ? 0xFFFFFFFF
+                            : 0;
                     }
                 }
-                DrawDisplay();
                 break;
 
             case 0xE000: // Keyboard input opcodes in E, range
-                switch (opcode & 0x00FF)
+                switch ((opcode & 0x00FF))
                 {
                     case 0x009E:
                         if (((Keyboard >> V[(opcode & 0x0F00) >> 8]) & 0x01) == 0x01) PC += 2;
@@ -300,11 +275,11 @@ public class CHIP8 ()
                     case 0x15: DelayTimer = V[tx]; break;
                     case 0x18: SoundTimer = V[tx]; break;
                     case 0x1E: I = (ushort)(I + V[tx]); break;
-                    case 0x29: I = (ushort)(V[tx * 5]); break;
+                    case 0x29: I = (ushort)(V[tx] * 5); break;
                     case 0x33:
                         RAM[I]     = (byte)(V[tx] / 100);
                         RAM[I + 1] = (byte)((V[tx] % 100) / 10);
-                        RAM[I + 2] = (byte)(V[tx % 10]);
+                        RAM[I + 2] = (byte)(V[tx] % 10);
                         break;
                     case 0x55:
                         for (int i = 0; i <= tx; i++) RAM[I + i] = V[i];
@@ -318,20 +293,31 @@ public class CHIP8 ()
             default: throw new Exception($"Unsupported opcode {opcode:x4}");
         }
     }
-
-    public void DrawDisplay()
+    
+    /// Initialize the built in font, storing it in lower portions of memory unused by programs:
+    /// Programs may also refer to a group of sprites representing the hexadecimal digits 0 through F
+    /// These sprites are 5 bytes long, or 8x5 pixels. The data should be stored in the interpreter 
+    /// area of Chip-8 memory (0x000 to 0x1FF). - Cowgod
+    private void InitFont()
     {
-        Console.Clear();
-        Console.SetCursorPosition(0, 0);
-        for (int y = 0; y < 32; y++)
-        {
-            string line = "";
-            for (int x = 0; x < 64; x++)
-            {
-                line += (Display[x + y * 64] != 0) ? "*" : " "; 
-            }
-            Console.WriteLine(line);
-        }
-        Thread.Sleep(5);
+        byte[] characters = { 
+            0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
+            0x20, 0x60, 0x20, 0x20, 0x70,   // 1
+            0xF0, 0x10, 0xF0, 0x80, 0xF0,   // 2
+            0xF0, 0x10, 0xF0, 0x10, 0xF0,   // 3
+            0x90, 0x90, 0xF0, 0x10, 0x10,   // 4
+            0xF0, 0x80, 0xF0, 0x10, 0xF0,   // 5
+            0xF0, 0x80, 0xF0, 0x90, 0xF0,   // 6
+            0xF0, 0x10, 0x20, 0x40, 0x40,   // 7
+            0xF0, 0x90, 0xF0, 0x90, 0xF0,   // 8
+            0xF0, 0x90, 0xF0, 0x10, 0xF0,   // 9
+            0xF0, 0x90, 0xF0, 0x90, 0x90,   // A
+            0xE0, 0x90, 0xE0, 0x90, 0xE0,   // B
+            0xF0, 0x80, 0x80, 0x80, 0xF0,   // C
+            0xE0, 0x90, 0x90, 0x90, 0xE0,   // D
+            0xF0, 0x80, 0xF0, 0x80, 0xF0,   // E
+            0xF0, 0x80, 0xF0, 0x80, 0x80    // F
+        };
+        Array.Copy(characters, RAM, characters.Length);
     }
 }
