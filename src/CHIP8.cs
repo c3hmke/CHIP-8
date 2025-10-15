@@ -102,14 +102,22 @@ public class CHIP8 ()
     
     /// Clock used for functionality of timers
     private readonly Stopwatch _clock = new();
-    private readonly int _ticksPer60hz = (int)(Stopwatch.Frequency * 0.016);
+    private readonly int _ticks60hz   = (int)(Stopwatch.Frequency * 0.016);
 
     /// Random number generator used to randomize some events
     private readonly Random _rng = new (Environment.TickCount);
-
-    /// Used to block and wait for input from the Keyboard
-    private bool _awaitingInput = false;
-
+    
+    /// Keyboard interaction operations
+    public bool WaitingForKeyPress = false;
+    public void KeyPressed(byte key)
+    {
+        WaitingForKeyPress = false;
+        
+        var opcode = (ushort)((RAM[PC] << 8) | RAM[PC + 1]);
+        V[(opcode & 0x0F00) >> 8] = key;
+        PC += 2;
+    }
+    
     /// Load a program into RAM to be executed by the emulator
     public void LoadProgram(byte[] program)
     {
@@ -127,23 +135,25 @@ public class CHIP8 ()
     {
         /// Handle the system clock timers
         if (!_clock.IsRunning) _clock.Start();
-        if (_clock.ElapsedTicks > _ticksPer60hz)
+        if (DelayTimer > 0)
         {
-            if (DelayTimer > 0) DelayTimer--;
-            if (SoundTimer > 0) SoundTimer--;
-            _clock.Restart();
+            if (_clock.ElapsedTicks > _ticks60hz)
+            {
+                DelayTimer--;
+                _clock.Restart();
+            }
         }
         
         /// Get the opcode
-        ushort opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
+        var opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
 
-        /// Handle any input
-        if (_awaitingInput)
-        {
-            //V[(opcode & 0x0F00) >> 8] = Keyboard;
-            throw new Exception("test");
-            return;
-        }
+        // /// Handle any input
+        // if (WaitingForKeyPress)
+        // {
+        //     //V[(opcode & 0x0F00) >> 8] = Keyboard;
+        //     throw new Exception("test");
+        //     return;
+        // }
         
         /// Increment the ProgramCounter and execute the opcode
         PC += 2;
@@ -272,7 +282,7 @@ public class CHIP8 ()
                 switch (opcode & 0x00FF)
                 {
                     case 0x07: V[tx] = DelayTimer; break;
-                    case 0x0A: _awaitingInput = true; PC -= 2; break;
+                    case 0x0A: WaitingForKeyPress = true; PC -= 2; break;
                     case 0x15: DelayTimer = V[tx]; break;
                     case 0x18: SoundTimer = V[tx]; break;
                     case 0x1E: I = (ushort)(I + V[tx]); break;
