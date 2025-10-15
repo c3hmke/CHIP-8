@@ -16,10 +16,10 @@ public static class Program
         if (renderer == 0 || window == 0) throw new Exception("SDL Could not create renderer");
         
         var chip8 = new CHIP8();
-        using (var reader = new BinaryReader(new FileStream("../../../ROMs/PONG", FileMode.Open)))
+        using (var reader = new BinaryReader(new FileStream("../../../ROMs/HeartMonitor.ch8", FileMode.Open)))
         {
             List<byte> program = [];
-            while (reader.BaseStream.Position != reader.BaseStream.Length - 1)
+            while (reader.BaseStream.Position != reader.BaseStream.Length)
                 program.Add(reader.ReadByte());
 
             chip8.LoadProgram(program.ToArray());
