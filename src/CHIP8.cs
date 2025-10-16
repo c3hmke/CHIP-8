@@ -87,7 +87,7 @@ namespace CHIP_8;
 /// |  FX65  | mem   | reg_load(Vx, &I)  | Fills V0 -> VX from memory starting at address I; I remains unchanged.      |
 /// --------------------------------------------------------------------------------------------------------------------
 /// </summary>
-public class CHIP8 ()
+public class CHIP8
 {
     /// Define the properties of the VirtualMachine so that it can be correctly simulated.
     private byte[] RAM = new byte[4096];                // 4Kb Memory
