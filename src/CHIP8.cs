@@ -154,7 +154,10 @@ public class CHIP8 ()
             case 0x0000:
                 switch (opcode)
                 {
-                    case 0x00E0: for (int i = 0; i < Display.Length; i++) Display[i] = 0; break;
+                    case 0x00E0: 
+                        for (int i = 0; i < Display.Length; i++) 
+                            Display[i] = 0x000000FF;
+                        break;
                     case 0x00EE: PC = Stack.Pop(); break;
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
                 }
@@ -238,20 +241,21 @@ public class CHIP8 ()
 
                 for (int i = 0; i < n; i++)                             // loop over each row
                 {
-                    byte mem = RAM[I + i];                              // the location drawing starts
+                    byte sprite = RAM[I + i];                           // the location drawing starts
                     for (int j = 0; j < 8; j++)                         // loop over each of the 8-bits
                     {   
-                        var px = (byte)((mem >> (7 - j)) & 0x01);       // the pixel we want to draw
+                        var px = (byte)((sprite >> (7 - j)) & 0x01);    // extract this bit of the sprite (1=draw, 0=no)
+                        if (px == 0) continue;                          // XOR with 0 does nothing, skip
                         
-                        int  dx = (x + j) % 64;                         // x position on the display
-                        int  dy = (y + i) % 32;                         // y position on the display
+                        int  dx = (x + j) & 63;                         // x position on the display (faster than %64)
+                        int  dy = (y + i) & 31;                         // y position on the display (faster than %32)
                         int  di = dx + dy * 64;                         // index on the display grid
-                        
-                        if (px == 1 && Display[di] != 0) V[15] = 1;     // if any pixels will flip off set flag
-                        Display[di]                                     // flip the pixel on the display
-                            = (Display[di] != 0 && px == 0) || (Display[di] == 0 && px == 1) 
-                            ? 0xFFFFFFFF
-                            : 0x00000000;
+
+                        bool oldPx = Display[di] == 0xFFFFFFFF;         // check the status of the current pixel
+                        bool newPx = !oldPx;                            // XOR : toggle the pixel
+
+                        if (oldPx && !newPx) V[15] = 1;                 // flag that the flip occured
+                        Display[di] = newPx ? 0xFFFFFFFF : 0x000000FF;  // then draw the new pixel to the display
                     }
                 }
                 break;
