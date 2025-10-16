@@ -90,15 +90,15 @@ namespace CHIP_8;
 public class CHIP8 ()
 {
     /// Define the properties of the VirtualMachine so that it can be correctly simulated.
-    public byte[] RAM = new byte[4096];         // 4Kb Memory
-    public byte[] V = new byte[16];             // Registers [V0 -> VF]
-    public ushort I = 0;                        // Address register with 16-bits
-    public ushort PC = 0;                       // Program Counter
-    public Stack<ushort> Stack = new();         // Stack (currently 'unlimited')
-    public byte DelayTimer;                     // DelayTimer used for timed events
-    public byte SoundTimer;                     // SoundTimer used for beep
-    public ushort Keyboard;                     // Use the lower4 bits for 16 keys
-    public uint[] Display = new uint[64 * 32];  // 64x32 display
+    private byte[] RAM = new byte[4096];                // 4Kb Memory
+    private readonly byte[] V = new byte[16];           // Registers [V0 -> VF]
+    private ushort I = 0;                               // Address register with 16-bits
+    private ushort PC = 0;                              // Program Counter
+    private readonly Stack<ushort> Stack = new();       // Stack (currently 'unlimited')
+    private byte DelayTimer;                            // DelayTimer used for timed events
+    public byte SoundTimer;                             // SoundTimer used for beep
+    public ushort Keyboard;                             // Use the lower4 bits for 16 keys
+    public readonly uint[] Display = new uint[64 * 32]; // 64x32 display
     
     /// Clock used for functionality of timers
     private readonly Stopwatch _clock = new();
@@ -146,14 +146,6 @@ public class CHIP8 ()
         
         /// Get the opcode
         var opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
-
-        // /// Handle any input
-        // if (WaitingForKeyPress)
-        // {
-        //     //V[(opcode & 0x0F00) >> 8] = Keyboard;
-        //     throw new Exception("test");
-        //     return;
-        // }
         
         /// Increment the ProgramCounter and execute the opcode
         PC += 2;

@@ -32,9 +32,9 @@ public static class Program
             freq     = 44100,
             samples  = 256,
             format   = SDL.AUDIO_S8,
-            callback = new SDL.SDL_AudioCallback((_, stream, length) =>
+            callback = (_, stream, length) =>
             {
-                sbyte[] waveData = new sbyte[length];
+                var waveData = new sbyte[length];
                 for (int i = 0; i < waveData.Length && chip8.SoundTimer > 0; i++, beeps++)
                 {
                     if (beeps == 730)
@@ -46,21 +46,18 @@ public static class Program
                     waveData[i] = (sbyte)(127 * Math.Sin(sample * Math.PI * 2 * 604.1 / 44100));
                     sample++;
                 }
-
-                byte[] byteData = (byte[])(Array)waveData;
-                Marshal.Copy(byteData, 0, stream, byteData.Length);
-            })
+                Marshal.Copy((byte[])(Array)waveData, 0, stream, waveData.Length);
+            }
         };
 
         SDL.SDL_OpenAudio(ref audioSpec, 0);
         SDL.SDL_PauseAudio(0);
 
-        nint SDLSurface, SDLTexture = 0;
+        nint SDLTexture = 0;
         var frameTimer = Stopwatch.StartNew();
         var ticks60hz = (int)(Stopwatch.Frequency * 0.016);
 
-        SDL.SDL_Event evt;
-        bool running = true;
+        var running = true;
         while (running)
         {
             if (!chip8.WaitingForKeyPress) chip8.Step();
@@ -83,10 +80,10 @@ public static class Program
                     }
                 }
 
-                var displayHandle = GCHandle.Alloc(chip8.Display, GCHandleType.Pinned);
+                GCHandle displayHandle = GCHandle.Alloc(chip8.Display, GCHandleType.Pinned);
                 if (SDLTexture != IntPtr.Zero) SDL.SDL_DestroyTexture(SDLTexture);
 
-                SDLSurface = SDL.SDL_CreateRGBSurfaceFrom(
+                nint SDLSurface = SDL.SDL_CreateRGBSurfaceFrom(
                     pixels: displayHandle.AddrOfPinnedObject(),
                     width:  64,         // screen width in px
                     height: 32,         // screen height in px
