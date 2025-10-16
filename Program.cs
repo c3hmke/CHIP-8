@@ -52,15 +52,27 @@ public static class Program
 
         SDL.SDL_OpenAudio(ref audioSpec, 0);
         SDL.SDL_PauseAudio(0);
-
-        nint SDLTexture = 0;
+        
         var frameTimer = Stopwatch.StartNew();
-        var ticks60hz = (int)(Stopwatch.Frequency * 0.016);
+        var ticks60hz  = (int)(Stopwatch.Frequency * 0.016);    // Screen runs at 60Hz
+        var cpuTimer   = Stopwatch.StartNew();
+        var ticks700Hz = (int)(Stopwatch.Frequency / 700.0);    // and the CPU at 700Hz
+        
+        nint SDLTexture = SDL.SDL_CreateTexture(
+            renderer,
+            SDL.SDL_PIXELFORMAT_RGBA8888,
+            (int) SDL.SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
+            64, 32
+        );
 
         var running = true;
         while (running)
         {
-            if (!chip8.WaitingForKeyPress) chip8.Step();
+            if (!chip8.WaitingForKeyPress && cpuTimer.ElapsedTicks >= ticks700Hz)
+            {
+                chip8.Step();
+                cpuTimer.Restart();
+            }
 
             if (frameTimer.ElapsedTicks > ticks60hz)
             {
@@ -79,24 +91,16 @@ public static class Program
                             break;
                     }
                 }
-
+                
                 GCHandle displayHandle = GCHandle.Alloc(chip8.Display, GCHandleType.Pinned);
-                if (SDLTexture != IntPtr.Zero) SDL.SDL_DestroyTexture(SDLTexture);
-
-                nint SDLSurface = SDL.SDL_CreateRGBSurfaceFrom(
-                    pixels: displayHandle.AddrOfPinnedObject(),
-                    width:  64,         // screen width in px
-                    height: 32,         // screen height in px
-                    depth:  32,         // bits per pixel
-                    pitch:  64 * 4,     // actual width?
-                    Rmask:  0x000000FF, // Red channel
-                    Gmask:  0x0000FF00, // Blue channel
-                    Bmask:  0x00FF0000, // Green channel
-                    Amask:  0xFF000000  // Alpha channel
-                );
-                SDLTexture = SDL.SDL_CreateTextureFromSurface(renderer, SDLSurface);
-
-                displayHandle.Free();
+                try
+                {
+                    SDL.SDL_UpdateTexture(SDLTexture, IntPtr.Zero, displayHandle.AddrOfPinnedObject(), 64 * 4);
+                }
+                finally
+                {
+                    displayHandle.Free();
+                }
 
                 SDL.SDL_RenderClear(renderer);
                 SDL.SDL_RenderCopy(renderer, SDLTexture, IntPtr.Zero, IntPtr.Zero);
@@ -105,7 +109,7 @@ public static class Program
                 frameTimer.Restart();
             }
 
-            Thread.Sleep(2);
+            //Thread.Sleep(2);
         }
         
         SDL.SDL_DestroyRenderer(renderer);

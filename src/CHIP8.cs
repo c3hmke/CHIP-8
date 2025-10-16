@@ -241,7 +241,7 @@ public class CHIP8 ()
                     byte mem = RAM[I + i];                              // the location drawing starts
                     for (int j = 0; j < 8; j++)                         // loop over each of the 8-bits
                     {   
-                        byte px = (byte)((mem >> (7 - j)) & 0x01);      // the pixel we want to draw
+                        var px = (byte)((mem >> (7 - j)) & 0x01);       // the pixel we want to draw
                         
                         int  dx = (x + j) % 64;                         // x position on the display
                         int  dy = (y + i) % 32;                         // y position on the display
@@ -251,7 +251,7 @@ public class CHIP8 ()
                         Display[di]                                     // flip the pixel on the display
                             = (Display[di] != 0 && px == 0) || (Display[di] == 0 && px == 1) 
                             ? 0xFFFFFFFF
-                            : 0;
+                            : 0x00000000;
                     }
                 }
                 break;
