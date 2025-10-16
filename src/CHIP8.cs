@@ -242,9 +242,10 @@ public class CHIP8 ()
                     for (int j = 0; j < 8; j++)                         // loop over each of the 8-bits
                     {   
                         byte px = (byte)((mem >> (7 - j)) & 0x01);      // the pixel we want to draw
-                        int  di = x + j + (y + i) * 64;                 // index on the display grid
                         
-                        if (di > 2047) continue;                        // ignoring any out of bounds
+                        int  dx = (x + j) % 64;                         // x position on the display
+                        int  dy = (y + i) % 32;                         // y position on the display
+                        int  di = dx + dy * 64;                         // index on the display grid
                         
                         if (px == 1 && Display[di] != 0) V[15] = 1;     // if any pixels will flip off set flag
                         Display[di]                                     // flip the pixel on the display
