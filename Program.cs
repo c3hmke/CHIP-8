@@ -53,45 +53,52 @@ public static class Program
         SDL.SDL_OpenAudio(ref audioSpec, 0);
         SDL.SDL_PauseAudio(0);
         
-        var frameTimer = Stopwatch.StartNew();
-        var ticks60hz  = (int)(Stopwatch.Frequency * 0.016);    // Screen runs at 60Hz
-        var cpuTimer   = Stopwatch.StartNew();
-        var ticks700Hz = (int)(Stopwatch.Frequency / 700.0);    // and the CPU at 700Hz
-        
         nint SDLTexture = SDL.SDL_CreateTexture(
-            renderer,
-            SDL.SDL_PIXELFORMAT_RGBA8888,
+            renderer, SDL.SDL_PIXELFORMAT_RGBA8888,
             (int) SDL.SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
             64, 32
         );
-
+        
+        var  frameTimer  = Stopwatch.StartNew();         // Timer for display out
+        long frameTicks  = Stopwatch.Frequency / 60;     // running at 60Hz
+        var  cpuTimer    = Stopwatch.StartNew();         // Timer for the CPU clock
+        long cpuTicks    = Stopwatch.Frequency / 700;    // running at 700Hz
+        long accumulator = 0;                            // Used to keep display synced
+        
         var running = true;
         while (running)
         {
-            if (!chip8.WaitingForKeyPress && cpuTimer.ElapsedTicks >= ticks700Hz)
+            if (!chip8.WaitingForKeyPress && cpuTimer.ElapsedTicks >= cpuTicks)
             {
                 chip8.Step();
                 cpuTimer.Restart();
             }
+            
+            // Accumulate for a stable 60Hz
+            long elapsed = frameTimer.ElapsedTicks;
+            frameTimer.Restart();
+            accumulator += elapsed;
 
-            if (frameTimer.ElapsedTicks > ticks60hz)
+            // Handle input outside of the 60Hz rate
+            while (SDL.SDL_PollEvent(out SDL.SDL_Event e) != 0)
             {
-                while (SDL.SDL_PollEvent(out SDL.SDL_Event e) != 0)
+                int key = keycodeToIndex(e.key.keysym.sym);
+                switch (e.type)
                 {
-                    int key = keycodeToIndex(e.key.keysym.sym);
-                    switch (e.type)
-                    {
-                        case SDL.SDL_EventType.SDL_QUIT: running = false; break;
-                        case SDL.SDL_EventType.SDL_KEYDOWN:
-                            chip8.Keyboard |= (ushort)(1 << key);
-                            if (chip8.WaitingForKeyPress) chip8.KeyPressed((byte)key);
-                            break;
-                        case SDL.SDL_EventType.SDL_KEYUP:
-                            chip8.Keyboard &= (ushort)~(1 << key);
-                            break;
-                    }
+                    case SDL.SDL_EventType.SDL_QUIT: running = false; break;
+                    case SDL.SDL_EventType.SDL_KEYDOWN:
+                        chip8.Keyboard |= (ushort)(1 << key);
+                        if (chip8.WaitingForKeyPress) chip8.KeyPressed((byte)key);
+                        break;
+                    case SDL.SDL_EventType.SDL_KEYUP:
+                        chip8.Keyboard &= (ushort)~(1 << key);
+                        break;
                 }
-                
+            }
+            
+            // Output to display at exactly 60Hz cadence
+            while (accumulator >= frameTicks)
+            {
                 GCHandle displayHandle = GCHandle.Alloc(chip8.Display, GCHandleType.Pinned);
                 try
                 {
@@ -102,14 +109,13 @@ public static class Program
                     displayHandle.Free();
                 }
 
+                // Clear -> Copy -> Present
                 SDL.SDL_RenderClear(renderer);
                 SDL.SDL_RenderCopy(renderer, SDLTexture, IntPtr.Zero, IntPtr.Zero);
                 SDL.SDL_RenderPresent(renderer);
 
-                frameTimer.Restart();
+                accumulator -= frameTicks;
             }
-
-            //Thread.Sleep(2);
         }
         
         SDL.SDL_DestroyRenderer(renderer);
