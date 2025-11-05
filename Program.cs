@@ -20,6 +20,10 @@ public static class Program
             renderer, SDL_PIXELFORMAT_RGBA8888,
             (int) SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
             64, 32);
+        
+        /// Configure posphor decay emulation
+        float[]     decayBuffer = new float[64 * 32];
+        const float decayRate   = 0.65f; //lower = faster
 
         /// Configure audio
         int sample = 0, beeps = 0;
@@ -100,9 +104,24 @@ public static class Program
                 }
             }
             
-            // Output to display at exactly 60Hz cadence
+            /// Output to display at exactly 60Hz cadence
             while (accumulator >= frameTicks)
             {
+                /// Mix in the decay blending
+                for (var i = 0; i < 64 * 32; i++)
+                {
+                    bool pixelOn = chip8.Display[i] == 0xFFFFFFFF;
+                    if (pixelOn) decayBuffer[i] = 1.0f;         // instant full brightness
+                    else         decayBuffer[i] *= decayRate;   // decay old light
+
+                    byte intensity = (byte)(decayBuffer[i] * 255.0f);
+                    chip8.Display[i] = ((uint)intensity << 24)          // A
+                                       | ((uint)intensity << 16)        // R
+                                       | ((uint)intensity << 8)         // G
+                                       | (uint)intensity;               // B
+                }
+                
+                /// Update the texture on the screen
                 GCHandle displayHandle = GCHandle.Alloc(chip8.Display, GCHandleType.Pinned);
                 try
                 {
@@ -113,7 +132,7 @@ public static class Program
                     displayHandle.Free();
                 }
 
-                // Clear -> Copy -> Present
+                /// Clear -> Copy -> Present
                 SDL_RenderClear(renderer);
                 SDL_RenderCopy(renderer, SDLTexture, IntPtr.Zero, IntPtr.Zero);
                 SDL_RenderPresent(renderer);
