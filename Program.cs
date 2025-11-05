@@ -11,20 +11,17 @@ public static class Program
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0) throw new Exception("SDL init failed");
 
         CHIP8 chip8 = new();
+        
+        /// Configure graphics
         nint window = SDL_CreateWindow("CHIP-8", 128, 128, 64 * 8, 32 * 8, 0);
         nint renderer = SDL_CreateRenderer(window, -1, SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
+        
+        nint SDLTexture = SDL_CreateTexture(
+            renderer, SDL_PIXELFORMAT_RGBA8888,
+            (int) SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
+            64, 32);
 
-        using (BinaryReader reader = new(new FileStream("../../../ROMs/BRIX", FileMode.Open)))
-        {
-            List<byte> program = [];
-            while (reader.BaseStream.Position < reader.BaseStream.Length)
-            {
-                program.Add(reader.ReadByte());
-            }
-
-            chip8.LoadProgram(program.ToArray());
-        }
-
+        /// Configure audio
         int sample = 0, beeps = 0;
         SDL_AudioSpec audioSpec = new()
         {
@@ -53,17 +50,24 @@ public static class Program
         SDL_OpenAudio(ref audioSpec, 0);
         SDL_PauseAudio(0);
         
-        nint SDLTexture = SDL_CreateTexture(
-            renderer, SDL_PIXELFORMAT_RGBA8888,
-            (int) SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
-            64, 32
-        );
-        
+        /// Confifure program timers
         var  frameTimer  = Stopwatch.StartNew();         // Timer for display out
         long frameTicks  = Stopwatch.Frequency / 60;     // running at 60Hz
         var  cpuTimer    = Stopwatch.StartNew();         // Timer for the CPU clock
         long cpuTicks    = Stopwatch.Frequency / 700;    // running at 700Hz
         long accumulator = 0;                            // Used to keep display synced
+        
+        /// Read the program into memory
+        using (BinaryReader reader = new(new FileStream("../../../ROMs/BRIX", FileMode.Open)))
+        {
+            List<byte> program = [];
+            while (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                program.Add(reader.ReadByte());
+            }
+
+            chip8.LoadProgram(program.ToArray());
+        }
         
         var running = true;
         while (running)
