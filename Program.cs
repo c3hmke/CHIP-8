@@ -32,9 +32,14 @@ public static class Program
         int BShift = BitOperations.TrailingZeroCount(Bmask);
         int AShift = BitOperations.TrailingZeroCount(Amask);
         
+        /// Pre-pack the brightnes values in a LUT for faster shifting
+        var brightnessLUT = new uint[256];
+        for (var n = 0; n < 256; n++)
+            brightnessLUT[n] = ((uint)n << RShift) | ((uint)n << GShift) | ((uint)n << BShift) | (0xFFu << AShift);
+        
         /// Configure posphor decay emulation
         float[]     decayBuffer = new float[64 * 32];
-        const float decayRate   = 0.65f; //lower = faster
+        const float decayRate   = 0.9f; //lower = faster
 
         /// Configure audio
         int sample = 0, beeps = 0;
@@ -125,12 +130,7 @@ public static class Program
                     if (pixelOn) decayBuffer[i] = 1.0f;         // instant full brightness
                     else         decayBuffer[i] *= decayRate;   // decay old light
 
-                    byte intensity = (byte)(decayBuffer[i] * 255.0f);
-                    chip8.Display[i] =
-                        ((uint)intensity << RShift) |
-                        ((uint)intensity << GShift) |
-                        ((uint)intensity << BShift) |
-                        (0xFFu << AShift);
+                    chip8.Display[i] = brightnessLUT[(byte)(decayBuffer[i] * 255.0f)];
                 }
                 
                 /// Update the texture on the screen
