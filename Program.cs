@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using static SDL2.SDL;
 
@@ -20,6 +21,16 @@ public static class Program
             renderer, SDL_PIXELFORMAT_RGBA8888,
             (int) SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
             64, 32);
+        
+        /// Query the texture format details (this can be big / little endian depending on the platform)
+        SDL_QueryTexture(SDLTexture, out uint format, out _, out _, out _);
+        SDL_PixelFormatEnumToMasks(format, out int bpp, out uint Rmask, out uint Gmask, out uint Bmask, out uint Amask);
+        
+        /// Precompute shifts based on masks (fast integer shift count)
+        int RShift = BitOperations.TrailingZeroCount(Rmask);
+        int GShift = BitOperations.TrailingZeroCount(Gmask);
+        int BShift = BitOperations.TrailingZeroCount(Bmask);
+        int AShift = BitOperations.TrailingZeroCount(Amask);
         
         /// Configure posphor decay emulation
         float[]     decayBuffer = new float[64 * 32];
@@ -87,7 +98,7 @@ public static class Program
             frameTimer.Restart();
             accumulator += elapsed;
 
-            // Handle input outside of the 60Hz rate
+            // Handle input outside the 60Hz rate
             while (SDL_PollEvent(out SDL_Event e) != 0)
             {
                 int key = keycodeToIndex(e.key.keysym.sym);
@@ -115,10 +126,11 @@ public static class Program
                     else         decayBuffer[i] *= decayRate;   // decay old light
 
                     byte intensity = (byte)(decayBuffer[i] * 255.0f);
-                    chip8.Display[i] = ((uint)intensity << 24)          // A
-                                       | ((uint)intensity << 16)        // R
-                                       | ((uint)intensity << 8)         // G
-                                       | (uint)intensity;               // B
+                    chip8.Display[i] =
+                        ((uint)intensity << RShift) |
+                        ((uint)intensity << GShift) |
+                        ((uint)intensity << BShift) |
+                        (0xFFu << AShift);
                 }
                 
                 /// Update the texture on the screen
