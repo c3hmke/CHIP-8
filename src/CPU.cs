@@ -87,7 +87,7 @@ namespace CHIP_8;
 /// |  FX65  | mem   | reg_load(Vx, &I)  | Fills V0 -> VX from memory starting at address I; I remains unchanged.      |
 /// --------------------------------------------------------------------------------------------------------------------
 /// </summary>
-public class CHIP8
+public class CPU
 {
     /// Define the properties of the VirtualMachine so that it can be correctly simulated.
     private byte[] RAM = new byte[4096];                // 4Kb Memory
@@ -113,7 +113,7 @@ public class CHIP8
     {
         WaitingForKeyPress = false;
         
-        var opcode = (ushort)((RAM[PC] << 8) | RAM[PC + 1]);
+        var opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
         V[(opcode & 0x0F00) >> 8] = key;
         PC += 2;
     }
@@ -196,11 +196,11 @@ public class CHIP8
                     case 3: V[vx] = (byte)(V[vx] ^ V[vy]); break;
                     case 4:
                         V[15] = (byte)(V[vx] + V[vy] > 255 ? 1 : 0);
-                        V[vx] = (byte)((V[vx] + V[vy]) & 0x00FF);
+                        V[vx] = (byte)(V[vx] + V[vy] & 0x00FF);
                         break;
                     case 5:
                         V[15] = (byte)(V[vx] > V[vy] ? 1 : 0);
-                        V[vx] = (byte)((V[vx] - V[vy]) & 0x00FF);
+                        V[vx] = (byte)(V[vx] - V[vy] & 0x00FF);
                         break;
                     case 6:
                         V[15] = (byte)(V[vx] & 0x0001);
@@ -208,10 +208,10 @@ public class CHIP8
                         break;
                     case 7:
                         V[15] = (byte)(V[vy] > V[vx] ? 1 : 0);
-                        V[vx] = (byte)((V[vy] - V[vx]) & 0x00FF);
+                        V[vx] = (byte)(V[vy] - V[vx] & 0x00FF);
                         break;
                     case 14:
-                        V[15] = (byte)(((V[vx] & 0x80) == 0x80) ? 1 : 0);
+                        V[15] = (byte)((V[vx] & 0x80) == 0x80 ? 1 : 0);
                         V[vx] = (byte)(V[vx] << 1);
                         break;
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
@@ -229,7 +229,7 @@ public class CHIP8
                 PC = (ushort)((opcode & 0x0FFF) + V[0]);
                 break;
             case 0xC000: // ( CXNN )
-                V[(opcode & 0x0F00) >> 8] = (byte)(_rng.Next() & (opcode & 0x00FF));
+                V[(opcode & 0x0F00) >> 8] = (byte)(_rng.Next() & opcode & 0x00FF);
                 break;
             
             case 0xD000: // ( DXYN )
@@ -244,11 +244,11 @@ public class CHIP8
                     byte sprite = RAM[I + i];                           // the location drawing starts
                     for (int j = 0; j < 8; j++)                         // loop over each of the 8-bits
                     {   
-                        var px = (byte)((sprite >> (7 - j)) & 0x01);    // extract this bit of the sprite (1=draw, 0=no)
+                        var px = (byte)(sprite >> 7 - j & 0x01);    // extract this bit of the sprite (1=draw, 0=no)
                         if (px == 0) continue;                          // XOR with 0 does nothing, skip
                         
-                        int  dx = (x + j) & 63;                         // x position on the display (faster than %64)
-                        int  dy = (y + i) & 31;                         // y position on the display (faster than %32)
+                        int  dx = x + j & 63;                         // x position on the display (faster than %64)
+                        int  dy = y + i & 31;                         // y position on the display (faster than %32)
                         int  di = dx + dy * 64;                         // index on the display grid
 
                         bool oldPx = Display[di] == 0xFFFFFFFF;         // check the status of the current pixel
@@ -261,13 +261,13 @@ public class CHIP8
                 break;
 
             case 0xE000: // Keyboard input opcodes in E, range
-                switch ((opcode & 0x00FF))
+                switch (opcode & 0x00FF)
                 {
                     case 0x009E:
-                        if (((Keyboard >> V[(opcode & 0x0F00) >> 8]) & 0x01) == 0x01) PC += 2;
+                        if ((Keyboard >> V[(opcode & 0x0F00) >> 8] & 0x01) == 0x01) PC += 2;
                         break;
                     case 0x00A1:
-                        if (((Keyboard >> V[(opcode & 0x0F00) >> 8]) & 0x01) != 0x01) PC += 2;
+                        if ((Keyboard >> V[(opcode & 0x0F00) >> 8] & 0x01) != 0x01) PC += 2;
                         break;
 
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
@@ -286,7 +286,7 @@ public class CHIP8
                     case 0x29: I = (ushort)(V[tx] * 5); break;
                     case 0x33:
                         RAM[I]     = (byte)(V[tx] / 100);
-                        RAM[I + 1] = (byte)((V[tx] % 100) / 10);
+                        RAM[I + 1] = (byte)(V[tx] % 100 / 10);
                         RAM[I + 2] = (byte)(V[tx] % 10);
                         break;
                     case 0x55:

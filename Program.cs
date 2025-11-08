@@ -11,7 +11,7 @@ public static class Program
     {
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0) throw new Exception("SDL init failed");
 
-        CHIP8 chip8 = new();
+        CPU cpu = new();
         
         /// Configure graphics
         nint window = SDL_CreateWindow("CHIP-8", 128, 128, 64 * 8, 32 * 8, 0);
@@ -52,12 +52,12 @@ public static class Program
             callback = (_, stream, length) =>
             {
                 var waveData = new sbyte[length];
-                for (int i = 0; i < waveData.Length && chip8.SoundTimer > 0; i++, beeps++)
+                for (int i = 0; i < waveData.Length && cpu.SoundTimer > 0; i++, beeps++)
                 {
                     if (beeps == 730)
                     {
                         beeps = 0;
-                        chip8.SoundTimer--;
+                        cpu.SoundTimer--;
                     }
 
                     waveData[i] = (sbyte)(127 * Math.Sin(sample * Math.PI * 2 * 604.1 / 44100));
@@ -86,15 +86,15 @@ public static class Program
                 program.Add(reader.ReadByte());
             }
 
-            chip8.LoadProgram(program.ToArray());
+            cpu.LoadProgram(program.ToArray());
         }
         
         var running = true;
         while (running)
         {
-            if (!chip8.WaitingForKeyPress && cpuTimer.ElapsedTicks >= cpuTicks)
+            if (!cpu.WaitingForKeyPress && cpuTimer.ElapsedTicks >= cpuTicks)
             {
-                chip8.Step();
+                cpu.Step();
                 cpuTimer.Restart();
             }
             
@@ -111,11 +111,11 @@ public static class Program
                 {
                     case SDL_EventType.SDL_QUIT: running = false; break;
                     case SDL_EventType.SDL_KEYDOWN:
-                        chip8.Keyboard |= (ushort)(1 << key);
-                        if (chip8.WaitingForKeyPress) chip8.KeyPressed((byte)key);
+                        cpu.Keyboard |= (ushort)(1 << key);
+                        if (cpu.WaitingForKeyPress) cpu.KeyPressed((byte)key);
                         break;
                     case SDL_EventType.SDL_KEYUP:
-                        chip8.Keyboard &= (ushort)~(1 << key);
+                        cpu.Keyboard &= (ushort)~(1 << key);
                         break;
                 }
             }
@@ -126,15 +126,15 @@ public static class Program
                 /// Mix in the decay blending
                 for (var i = 0; i < 64 * 32; i++)
                 {
-                    bool pixelOn = chip8.Display[i] == 0xFFFFFFFF;
+                    bool pixelOn = cpu.Display[i] == 0xFFFFFFFF;
                     if (pixelOn) decayBuffer[i] = 1.0f;         // instant full brightness
                     else         decayBuffer[i] *= decayRate;   // decay old light
 
-                    chip8.Display[i] = brightnessLUT[(byte)(decayBuffer[i] * 255.0f)];
+                    cpu.Display[i] = brightnessLUT[(byte)(decayBuffer[i] * 255.0f)];
                 }
                 
                 /// Update the texture on the screen
-                GCHandle displayHandle = GCHandle.Alloc(chip8.Display, GCHandleType.Pinned);
+                GCHandle displayHandle = GCHandle.Alloc(cpu.Display, GCHandleType.Pinned);
                 try
                 {
                     SDL_UpdateTexture(SDLTexture, IntPtr.Zero, displayHandle.AddrOfPinnedObject(), 64 * 4);
