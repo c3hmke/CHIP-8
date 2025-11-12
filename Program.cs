@@ -1,6 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Numerics;
-using System.Runtime.InteropServices;
 using static SDL2.SDL;
 
 namespace CHIP_8;
@@ -11,36 +9,9 @@ public static class Program
     {
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0) throw new Exception("SDL init failed");
 
-        CPU cpu           = new();
-        AudioEngine audio = new(cpu);
-        
-        /// Configure graphics
-        nint window = SDL_CreateWindow("CHIP-8", 128, 128, 64 * 8, 32 * 8, 0);
-        nint renderer = SDL_CreateRenderer(window, -1, SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
-        
-        nint SDLTexture = SDL_CreateTexture(
-            renderer, SDL_PIXELFORMAT_RGBA8888,
-            (int) SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
-            64, 32);
-        
-        /// Query the texture format details (this can be big / little endian depending on the platform)
-        SDL_QueryTexture(SDLTexture, out uint format, out _, out _, out _);
-        SDL_PixelFormatEnumToMasks(format, out int bpp, out uint Rmask, out uint Gmask, out uint Bmask, out uint Amask);
-        
-        /// Precompute shifts based on masks (fast integer shift count)
-        int RShift = BitOperations.TrailingZeroCount(Rmask);
-        int GShift = BitOperations.TrailingZeroCount(Gmask);
-        int BShift = BitOperations.TrailingZeroCount(Bmask);
-        int AShift = BitOperations.TrailingZeroCount(Amask);
-        
-        /// Pre-pack the brightnes values in a LUT for faster shifting
-        var brightnessLUT = new uint[256];
-        for (var n = 0; n < 256; n++)
-            brightnessLUT[n] = ((uint)n << RShift) | ((uint)n << GShift) | ((uint)n << BShift) | (0xFFu << AShift);
-        
-        /// Configure posphor decay emulation
-        float[]     decayBuffer = new float[64 * 32];
-        const float decayRate   = 0.9f; //lower = faster
+        CPU          cpu      = new();
+        RenderEngine renderer = new(64, 32, 8);
+        AudioEngine  audio    = new(cpu);
         
         /// Confifure program timers
         var  frameTimer  = Stopwatch.StartNew();         // Timer for display out
@@ -95,38 +66,14 @@ public static class Program
             /// Output to display at exactly 60Hz cadence
             while (accumulator >= frameTicks)
             {
-                /// Mix in the decay blending
-                for (var i = 0; i < 64 * 32; i++)
-                {
-                    bool pixelOn = cpu.Display[i] == 0xFFFFFFFF;
-                    if (pixelOn) decayBuffer[i] = 1.0f;         // instant full brightness
-                    else         decayBuffer[i] *= decayRate;   // decay old light
-
-                    cpu.Display[i] = brightnessLUT[(byte)(decayBuffer[i] * 255.0f)];
-                }
-                
-                /// Update the texture on the screen
-                GCHandle displayHandle = GCHandle.Alloc(cpu.Display, GCHandleType.Pinned);
-                try
-                {
-                    SDL_UpdateTexture(SDLTexture, IntPtr.Zero, displayHandle.AddrOfPinnedObject(), 64 * 4);
-                }
-                finally
-                {
-                    displayHandle.Free();
-                }
-
-                /// Clear -> Copy -> Present
-                SDL_RenderClear(renderer);
-                SDL_RenderCopy(renderer, SDLTexture, IntPtr.Zero, IntPtr.Zero);
-                SDL_RenderPresent(renderer);
+                renderer.Render(cpu.Display);
 
                 accumulator -= frameTicks;
             }
         }
-        
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
+
+        renderer.Dispose();
+        SDL_Quit();
     }
 
     private static int keycodeToIndex(SDL_Keycode keycode)
