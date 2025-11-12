@@ -11,7 +11,8 @@ public static class Program
     {
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0) throw new Exception("SDL init failed");
 
-        CPU cpu = new();
+        CPU cpu           = new();
+        AudioEngine audio = new(cpu);
         
         /// Configure graphics
         nint window = SDL_CreateWindow("CHIP-8", 128, 128, 64 * 8, 32 * 8, 0);
@@ -40,35 +41,6 @@ public static class Program
         /// Configure posphor decay emulation
         float[]     decayBuffer = new float[64 * 32];
         const float decayRate   = 0.9f; //lower = faster
-
-        /// Configure audio
-        int sample = 0, beeps = 0;
-        SDL_AudioSpec audioSpec = new()
-        {
-            channels = 1,
-            freq     = 44100,
-            samples  = 256,
-            format   = AUDIO_S8,
-            callback = (_, stream, length) =>
-            {
-                var waveData = new sbyte[length];
-                for (int i = 0; i < waveData.Length && cpu.SoundTimer > 0; i++, beeps++)
-                {
-                    if (beeps == 730)
-                    {
-                        beeps = 0;
-                        cpu.SoundTimer--;
-                    }
-
-                    waveData[i] = (sbyte)(127 * Math.Sin(sample * Math.PI * 2 * 604.1 / 44100));
-                    sample++;
-                }
-                Marshal.Copy((byte[])(Array)waveData, 0, stream, waveData.Length);
-            }
-        };
-
-        SDL_OpenAudio(ref audioSpec, 0);
-        SDL_PauseAudio(0);
         
         /// Confifure program timers
         var  frameTimer  = Stopwatch.StartNew();         // Timer for display out
