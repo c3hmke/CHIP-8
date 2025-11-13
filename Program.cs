@@ -26,17 +26,9 @@ public static class Program
             () => cpu.Keyboard,
             v  => cpu.Keyboard = v);
         
-        /// Read the program into memory
-        using (BinaryReader reader = new(new FileStream("../../../ROMs/BRIX", FileMode.Open)))
-        {
-            List<byte> program = [];
-            while (reader.BaseStream.Position < reader.BaseStream.Length)
-            {
-                program.Add(reader.ReadByte());
-            }
-
-            cpu.LoadProgram(program.ToArray());
-        }
+        /// Load a ROM into the program memory
+        string romPath = args.Length > 0 ? args[0] : "../../../ROMs/BRIX";
+        cpu.LoadProgram(File.ReadAllBytes(romPath));
         
         while (input.Running)
         {
