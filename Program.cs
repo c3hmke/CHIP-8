@@ -14,9 +14,10 @@ public static class Program
         
         if (SDL_Init(flags) < 0) throw new Exception("SDL init failed");
 
+        /// Configure VM components
         CPU          cpu      = new();
         RenderEngine renderer = new(64, 32, 8);
-        AudioEngine  audio    = new(cpu);
+        AudioEngine  _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
         InputHandler input    = new(cpu);
         
         /// Confifure program timers

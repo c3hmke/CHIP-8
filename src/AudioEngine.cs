@@ -5,22 +5,37 @@ namespace CHIP_8;
 
 public sealed class AudioEngine
 {
+    
     private int _sample, _beeps;
+    
+    private readonly Func<byte>   _getSoundTimer;
+    private readonly Action<byte> _setSoundTimer;
 
-    public AudioEngine(CPU cpu)
+    public AudioEngine(Func<byte> getSoundTimer, Action<byte> setSoundTimer)
     {
+        _getSoundTimer = getSoundTimer;
+        _setSoundTimer = setSoundTimer;
+        
         SDL_AudioSpec spec = new()
         {
             channels = 1,
-            freq = 44100,
-            samples = 256,
-            format = AUDIO_S8,
+            freq     = 44100,
+            samples  = 256,
+            format   = AUDIO_S8,
             callback = (_, stream, length) =>
             {
-                var data = new sbyte[length];
-                for (int i = 0; i < data.Length && cpu.SoundTimer > 0; i++, _beeps++)
+                var data   = new sbyte[length];
+                byte timer = _getSoundTimer();
+                
+                for (int i = 0; i < data.Length && timer > 0; i++, _beeps++)
                 {
-                    if (_beeps == 730) { _beeps = 0; cpu.SoundTimer--; }
+                    if (_beeps == 730)
+                    {
+                        _beeps = 0;
+                        setSoundTimer((byte)(timer - 1));
+                        timer = _getSoundTimer();
+                    }
+                    
                     data[i] = (sbyte)(127 * Math.Sin(_sample * Math.PI * 2 * 604.1 / 44100));
                     _sample++;
                 }
