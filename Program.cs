@@ -17,6 +17,7 @@ public static class Program
         CPU          cpu      = new();
         RenderEngine renderer = new(64, 32, 8);
         AudioEngine  audio    = new(cpu);
+        InputHandler input    = new(cpu);
         
         /// Confifure program timers
         var  frameTimer  = Stopwatch.StartNew();         // Timer for display out
@@ -37,8 +38,7 @@ public static class Program
             cpu.LoadProgram(program.ToArray());
         }
         
-        var running = true;
-        while (running)
+        while (input.Running)
         {
             if (!cpu.WaitingForKeyPress && cpuTimer.ElapsedTicks >= cpuTicks)
             {
@@ -52,21 +52,7 @@ public static class Program
             accumulator += elapsed;
 
             // Handle input outside the 60Hz rate
-            while (SDL_PollEvent(out SDL_Event e) != 0)
-            {
-                int key = keycodeToIndex(e.key.keysym.sym);
-                switch (e.type)
-                {
-                    case SDL_EventType.SDL_QUIT: running = false; break;
-                    case SDL_EventType.SDL_KEYDOWN:
-                        cpu.Keyboard |= (ushort)(1 << key);
-                        if (cpu.WaitingForKeyPress) cpu.KeyPressed((byte)key);
-                        break;
-                    case SDL_EventType.SDL_KEYUP:
-                        cpu.Keyboard &= (ushort)~(1 << key);
-                        break;
-                }
-            }
+            input.PollEvent();
             
             /// Output to display at exactly 60Hz cadence
             while (accumulator >= frameTicks)
@@ -79,11 +65,5 @@ public static class Program
 
         renderer.Dispose();
         SDL_Quit();
-    }
-
-    private static int keycodeToIndex(SDL_Keycode keycode)
-    {
-        var key  = (int)keycode;                    // ascii int value for the key pressed
-        return (key < 58) ? key - 48 : key - 87;    // index for that key
     }
 }
