@@ -1,4 +1,6 @@
-﻿using static SDL2.SDL;
+﻿// ReSharper disable AccessToDisposedClosure; Disposed after use.
+
+using static SDL2.SDL;
 
 namespace CHIP_8;
 
@@ -16,8 +18,8 @@ public static class Program
         /// Configure VM components
         CPU          cpu      = new();
         RenderEngine renderer = new(64, 32, 8);
-        ClockHandler clock    = new();
         AudioEngine  _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
+        ClockHandler clock    = new(cpu.Step, () => renderer.Render(cpu.Display));
         InputHandler input    = new(
             () => cpu.WaitingForKeyPress,
             k  => cpu.KeyPressed(k),
@@ -38,9 +40,8 @@ public static class Program
         
         while (input.Running)
         {
-            clock.StepCPU(cpu.Step);                                // Step the CPU
-            input.PollEvent();                                      // Handle input outside the CPU & Frame timers
-            clock.StepFrame(() => renderer.Render(cpu.Display));    // Draw a frame to the display
+            clock.Tick();
+            input.PollEvent();
         }
 
         renderer.Dispose();
