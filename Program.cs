@@ -18,7 +18,11 @@ public static class Program
         CPU          cpu      = new();
         RenderEngine renderer = new(64, 32, 8);
         AudioEngine  _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
-        InputHandler input    = new(cpu);
+        InputHandler input    = new(
+            () => cpu.WaitingForKeyPress,
+            k  => cpu.KeyPressed(k),
+            () => cpu.Keyboard,
+            v  => cpu.Keyboard = v);
         
         /// Confifure program timers
         var  frameTimer  = Stopwatch.StartNew();         // Timer for display out
