@@ -6,14 +6,14 @@ namespace CHIP_8;
 
 public static class Program
 {
-    static void Main(string[] args)
+    private static void Main(string[] args)
     {
         const uint flags = SDL_INIT_VIDEO |
                            SDL_INIT_AUDIO |
                            SDL_INIT_TIMER |
                            SDL_INIT_EVENTS;
         
-        if (SDL_Init(flags) < 0) throw new Exception("SDL init failed");
+        if (SDL_Init(flags) < 0) throw new Exception($"SDL init failed: {SDL_GetError()}");
 
         /// Configure VM components
         CPU          cpu      = new();
@@ -30,6 +30,7 @@ public static class Program
         string romPath = args.Length > 0 ? args[0] : "../../../ROMs/BRIX";
         cpu.LoadProgram(File.ReadAllBytes(romPath));
         
+        /// Program loop
         while (input.Running)
         {
             clock.Tick();
