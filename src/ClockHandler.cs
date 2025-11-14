@@ -4,36 +4,44 @@ namespace CHIP_8;
 
 public class ClockHandler
 {
-    /// Configure clock settings
-    private const int CPU_Hz   = 700;   // Frequency the CPU runs at
-    private const int Frame_Hz = 60;    // Frequency the display refreshes at
-    private long      accumulator;      // Used to keep display & CPU clocks synced
+    /// Used to keep display & CPU clocks synced
+    private long accumulator;
     
     /// Configure the CPU clock, used for executing opcodes
-    private readonly Stopwatch _cpuTimer   = Stopwatch.StartNew();           // Timer for the CPU clock
-    private readonly long      _cpuTicks   = Stopwatch.Frequency / CPU_Hz;   // running at CPU_Hz
-    private readonly Action    _cpuStep;                                     // Action to take on CPU step
+    private readonly Stopwatch _cpuTimer   = Stopwatch.StartNew();  // Timer for the CPU clock
+    private readonly long      _cpuTicks;                           // Frequency for CPU clock, derived from _cpuHz
+    private readonly Action    _cpuStep;                            // Action to take on CPU step
 
     /// Configure the Frame clock, used for display
-    private readonly Stopwatch _frameTimer = Stopwatch.StartNew();           // Timer for display out
-    private readonly long      _frameTicks = Stopwatch.Frequency / Frame_Hz; // running at Frame_Hz
-    private readonly Action    _frameStep;                                   // Action to take on Frame step
+    private readonly Stopwatch _frameTimer = Stopwatch.StartNew();  // Timer for display out
+    private readonly long      _frameTicks;                         // Frequency for CPU clock, derived from _frameHz
+    private readonly Action    _frameStep;                          // Action to take on Frame step
 
     
-    public ClockHandler(Action cpuStep, Action frameStep)
+    public ClockHandler(Action cpuStep, Action frameStep, int cpuHz = 700, int frameHz = 60)
     {
         _cpuStep   = cpuStep;
         _frameStep = frameStep;
+        
+        _cpuTicks   = Stopwatch.Frequency / cpuHz;
+        _frameTicks = Stopwatch.Frequency / frameHz;
     }
 
+    /// <summary>
+    /// Tick over the system clocks. This will step on both CPU and Frame and execute
+    /// the event-bound functions which were passed to the ClockHandler on construction.
+    /// </summary>
     public void Tick()
     {
         StepCPU();
         StepFrame();
     }
-    
 
-    public void StepCPU()
+    /// <summary>
+    /// Step the CPU timer, then perform the event-bound action & reset the timer if
+    /// the number of ticks passed matches the frequency the CPU runs at.
+    /// </summary>
+    private void StepCPU()
     {
         if (_cpuTimer.ElapsedTicks >= _cpuTicks)
         {
@@ -42,7 +50,11 @@ public class ClockHandler
         }
     }
 
-    public void StepFrame()
+    /// <summary>
+    /// Step the Frame timer, then perform the event-bound action & reset the timer if
+    /// the number of ticks passed matches the frequency the Display runs at.
+    /// </summary>
+    private void StepFrame()
     {
         long elapsed = _frameTimer.ElapsedTicks;
         _frameTimer.Restart();
