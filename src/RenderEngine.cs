@@ -1,21 +1,6 @@
-using OpenTK;
 using OpenTK.Graphics.OpenGL4;
-using static SDL2.SDL;
 
 namespace CHIP_8;
-
-/// <summary>
-/// Custom binding context for OpenGL <-> SDL.
-/// OpenTK 4.x requires explicit binding initialization, this class is used to tell
-/// it about the SDL OpenGL context which is created when the renderer is created.
-/// </summary>
-public class SDL_GL_BindingsContext : IBindingsContext
-{
-    public IntPtr GetProcAddress(string procName)
-    {
-        return SDL_GL_GetProcAddress(procName);
-    }
-}
 
 /// <summary>
 /// Render Engine used to draw graphics to the screen. This uses the display buffer as
@@ -24,9 +9,8 @@ public class SDL_GL_BindingsContext : IBindingsContext
 /// </summary>
 public sealed class RenderEngine : IDisposable
 {
-    /// W x H of the display in px
-    private readonly int _width;
-    private readonly int _height;
+    /// W x H of the display in px & scale to draw
+    private readonly int _width, _height, _scale;
     
     /// The decay buffer is used to emulate phosphor decay which was present on the
     /// original hardware used to run these emulators. A lot of the programs flicker
@@ -42,9 +26,6 @@ public sealed class RenderEngine : IDisposable
     private readonly byte[] _textureData; // RGBA8
 
     /// Class properties
-    private readonly nint _window;
-    private readonly nint _glContext;
-    
     private readonly int _textureId;
     private readonly int _vao;
     private readonly int _vbo;
@@ -57,44 +38,10 @@ public sealed class RenderEngine : IDisposable
     /// </summary>
     public RenderEngine(int width, int height, int scale)
     {
-        _width  = width;
-        _height = height;
+        _width  = width; _height = height; _scale  = scale;
 
         _decayBuffer = new float[width * height];
         _textureData = new byte[width * height * 4];
-
-        /// Create an SDL Window using OpenGL
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_CONTEXT_MINOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_CONTEXT_PROFILE_MASK, SDL_GLprofile.SDL_GL_CONTEXT_PROFILE_CORE);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_DOUBLEBUFFER, 1);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_DEPTH_SIZE, 24);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_STENCIL_SIZE, 8);
-
-        _window = SDL_CreateWindow(
-            "CHIP-8", 
-            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-            _width * scale, _height * scale,
-            SDL_WindowFlags.SDL_WINDOW_OPENGL);
-
-        if (_window == 0)
-            throw new Exception($"SDL_CreateWindow FAIL: {SDL_GetError()}");
-
-        _glContext = SDL_GL_CreateContext(_window);
-        
-        if (_glContext == 0)
-            throw new Exception($"SDL_GL_CreateContext FAIL: {SDL_GetError()}");
-        
-        /// Set up the Window
-        SDL_GL_MakeCurrent(_window, _glContext);    // Active window
-        SDL_GL_SetSwapInterval(1);                  // VSync
-
-        GL.LoadBindings(new SDL_GL_BindingsContext());
-        GL.Viewport(0, 0, _width * scale, _height * scale);
-        GL.ClearColor(1f, 0f, 0f, 1f);
-        GL.Clear(ClearBufferMask.ColorBufferBit);
-        
-        SDL_GL_SwapWindow(_window);
         
         const int stride = 4 * sizeof(float);
 
@@ -258,8 +205,8 @@ public sealed class RenderEngine : IDisposable
         }
 
         /// Draw quad
-        SDL_GL_GetDrawableSize(_window, out int fbW, out int fbH);
-        GL.Viewport(0, 0, fbW, fbH);
+        // SDL_GL_GetDrawableSize(_window, out int fbW, out int fbH);
+        GL.Viewport(0, 0, _width * _scale, _height * _scale);
         GL.Clear(ClearBufferMask.ColorBufferBit);
 
         GL.UseProgram(_shaderProgram);
@@ -275,7 +222,7 @@ public sealed class RenderEngine : IDisposable
         GL.UseProgram(0);
 
         /// Present
-        SDL_GL_SwapWindow(_window);
+        // SDL_GL_SwapWindow(_window);
     }
 
     /// <summary>
@@ -288,8 +235,5 @@ public sealed class RenderEngine : IDisposable
         if (_ebo != 0)           GL.DeleteBuffer(_ebo);
         if (_vao != 0)           GL.DeleteVertexArray(_vao);
         if (_shaderProgram != 0) GL.DeleteProgram(_shaderProgram);
-
-        if (_glContext != 0) SDL_GL_DeleteContext(_glContext);
-        if (_window != 0)    SDL_DestroyWindow(_window);
     }
 }
