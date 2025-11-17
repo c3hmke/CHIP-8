@@ -97,7 +97,10 @@ public sealed class RenderEngine : IDisposable
 
         GL.BindTexture(TextureTarget.Texture2D, 0);
         
+        GL.ClearColor(0f, 0f, 0f, 1f); // clearing will result in this color.
+        
         /// Shaders
+        int vertexShader = GL.CreateShader(ShaderType.VertexShader);
         const string vertexSrc = """
 
                                  #version 330 core
@@ -113,7 +116,14 @@ public sealed class RenderEngine : IDisposable
                                  }
 
                                  """;
+        GL.ShaderSource(vertexShader, vertexSrc);
+        GL.CompileShader(vertexShader);
+        GL.GetShader(vertexShader, ShaderParameter.CompileStatus, out int vsStatus);
+        
+        if (vsStatus == 0)
+            throw new Exception($"Vertex shader compile FAIL: {GL.GetShaderInfoLog(vertexShader)}");
 
+        int fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
         const string fragmentSrc = """
 
                                    #version 330 core
@@ -128,16 +138,6 @@ public sealed class RenderEngine : IDisposable
                                    }
 
                                    """;
-
-        int vertexShader = GL.CreateShader(ShaderType.VertexShader);
-        GL.ShaderSource(vertexShader, vertexSrc);
-        GL.CompileShader(vertexShader);
-        GL.GetShader(vertexShader, ShaderParameter.CompileStatus, out int vsStatus);
-        
-        if (vsStatus == 0)
-            throw new Exception($"Vertex shader compile FAIL: {GL.GetShaderInfoLog(vertexShader)}");
-
-        int fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
         GL.ShaderSource(fragmentShader, fragmentSrc);
         GL.CompileShader(fragmentShader);
         GL.GetShader(fragmentShader, ShaderParameter.CompileStatus, out int fsStatus);
@@ -205,8 +205,12 @@ public sealed class RenderEngine : IDisposable
         }
 
         /// Draw quad
-        // SDL_GL_GetDrawableSize(_window, out int fbW, out int fbH);
-        GL.Viewport(0, 0, _width * _scale, _height * _scale);
+        int padding = 16;
+        GL.Viewport(
+            x:      padding,
+            y:      padding,
+            width:  (_width * _scale) - (padding * 2),
+            height: (_height * _scale) - (padding * 2));
         GL.Clear(ClearBufferMask.ColorBufferBit);
 
         GL.UseProgram(_shaderProgram);
@@ -220,9 +224,6 @@ public sealed class RenderEngine : IDisposable
 
         GL.BindTexture(TextureTarget.Texture2D, 0);
         GL.UseProgram(0);
-
-        /// Present
-        // SDL_GL_SwapWindow(_window);
     }
 
     /// <summary>
