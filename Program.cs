@@ -16,6 +16,10 @@ public class SDL_GL_BindingsContext : IBindingsContext
     public IntPtr GetProcAddress(string procName) => SDL_GL_GetProcAddress(procName);
 }
 
+/// <summary>
+/// Main Emulator program loop, this builds all the components to make the emulator
+/// run and is responsible for the render pipeline.
+/// </summary>
 public static class Program
 {
     private const int width  = 64;
@@ -24,25 +28,16 @@ public static class Program
     
     private static void Main(string[] args)
     {
-        // /// --------------------------------------------------------------------
-        // ///     ROM selection menu (console-based, before SDL is initialized)
-        // /// --------------------------------------------------------------------
-        // // Load the ROMs in the provided directory
-        // string ROMDir = Path.GetFullPath("../../../ROMs");
-        // string[] ROMs = Directory.GetFiles(ROMDir)
-        //     .OrderBy(Path.GetFileNameWithoutExtension)
-        //     .ToArray();
-        //     
-        // if (ROMs.Length == 0) throw new Exception("No ROMs found!");
-        //
-        // Console.WriteLine($"ROMs:");
-        // for (var i = 0; i < ROMs.Length; i++)
-        //     Console.WriteLine($"[{i}] {Path.GetFileName(ROMs[i])}");
-        //
-        // Console.WriteLine("Select ROM index: ");
-        // string line = Console.ReadLine()!;
-        //
-        // string ROMPath = ROMs[int.Parse(line)];
+        /// --------------------------------------------------------------------
+        ///     ROM Discovery
+        /// --------------------------------------------------------------------
+        string ROMDir = Path.Combine(AppContext.BaseDirectory, "ROMs");
+        string[] ROMs = Directory.GetFiles(ROMDir)
+                                 .OrderBy(Path.GetFileNameWithoutExtension)
+                                 .ToArray();
+
+        int currentROM    = 0;  // currently loaded ROM index
+        string[] ROMNames = ROMs.Select(Path.GetFileName).ToArray()!;
         
         // --------------------------------------------------------------------
         //      SDL and emulator initialization
@@ -55,7 +50,7 @@ public static class Program
         if (SDL_Init(flags) < 0) 
             throw new Exception($"SDL init FAIL: {SDL_GetError()}");
         
-        /// Setup OpenGL Attributes
+        // Setup OpenGL Attributes
         SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_CONTEXT_MINOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_CONTEXT_PROFILE_MASK, SDL_GLprofile.SDL_GL_CONTEXT_PROFILE_CORE);
@@ -78,7 +73,7 @@ public static class Program
         if (glContext == 0)
             throw new Exception($"SDL_GL_CreateContext FAIL: {SDL_GetError()}");
         
-        /// Set up the Window
+        // Set up the Window
         SDL_GL_MakeCurrent(window, glContext);      // Active window
         SDL_GL_SetSwapInterval(1);                  // VSync
 
@@ -86,7 +81,9 @@ public static class Program
         GL.Viewport(0, 0, width * scale, height * scale);
         GL.ClearColor(1f, 0f, 0f, 1f);
         
-        /// Configure VM components
+        // --------------------------------------------------------------------
+        //      VM Components
+        // --------------------------------------------------------------------
         CPU          cpu      = new();
         RenderEngine renderer = new(width, height, scale);
         AudioEngine  _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
@@ -95,25 +92,29 @@ public static class Program
             k  => cpu.KeyPressed(k),
             () => cpu.Keyboard,
             v  => cpu.Keyboard = v);
+        
+        // Load initial ROM into program memory (first in list by default)
+        cpu.LoadProgram(File.ReadAllBytes(ROMs[currentROM]));
+        
+        // ClockHandler handles syncing and execution of the Display & CPU
         ClockHandler clock = new(cpu.Step, () =>
         {
-            renderer.Render(cpu.Display);
-            SDL_GL_SwapWindow(window);
+            renderer.Render(cpu.Display);   // Render CHIP-8 framebuffer
+            SDL_GL_SwapWindow(window);      // Present the frame
         });
-        
-        /// Load a ROM into the program memory
-        cpu.LoadProgram(File.ReadAllBytes("../../../ROMs/BRIX"));
         
         // --------------------------------------------------------------------
         //      Main program loop
         // --------------------------------------------------------------------
         while (input.Running)
         {
-            clock.Tick();
-            input.PollEvent();
+            clock.Tick();      // CPU steps and renderer.Render(cpu.Display)
+            input.PollEvent(); // Handle SDL events for input handler
         }
 
-        /// Dispose of objects once done running
+        // --------------------------------------------------------------------
+        //      Cleanup
+        // --------------------------------------------------------------------
         renderer.Dispose();
         SDL_GL_DeleteContext(glContext);
         SDL_DestroyWindow(window);
