@@ -90,15 +90,15 @@ namespace CHIP_8;
 public class CPU
 {
     /// Define the properties of the VirtualMachine so that it can be correctly simulated.
-    private byte[] RAM = new byte[4096];                // 4Kb Memory
-    private readonly byte[] V = new byte[16];           // Registers [V0 -> VF]
-    private ushort I = 0;                               // Address register with 16-bits
-    private ushort PC = 0;                              // Program Counter
-    private readonly Stack<ushort> Stack = new();       // Stack (currently 'unlimited')
-    private byte DelayTimer;                            // DelayTimer used for timed events
-    public byte SoundTimer;                             // SoundTimer used for beep
-    public ushort Keyboard;                             // Use the lower4 bits for 16 keys
-    public readonly uint[] Display = new uint[64 * 32]; // 64x32 display
+    private byte[] RAM = new byte[4096];                 // 4Kb Memory
+    private readonly byte[] V = new byte[16];            // Registers [V0 -> VF]
+    private ushort I = 0;                                // Address register with 16-bits
+    private ushort PC = 0;                               // Program Counter
+    private readonly Stack<ushort> Stack = new();        // Stack (currently 'unlimited')
+    private byte DelayTimer;                             // DelayTimer used for timed events
+    public  byte SoundTimer;                             // SoundTimer used for beep
+    public  ushort Keyboard;                             // Use the lower4 bits for 16 keys
+    public  readonly uint[] Display = new uint[64 * 32]; // 64x32 display
     
     /// Clock used for functionality of timers
     private readonly Stopwatch _clock = new();
@@ -121,19 +121,27 @@ public class CPU
     /// Load a program into RAM to be executed by the emulator
     public void LoadProgram(byte[] program)
     {
-        RAM = new byte[4096];   // clear memory
-        PC = 512;               // set PC to start locations
-        InitFont();             // Load the built-in font into memory
+        Reset();
 
         // Load in the program passed to this function
         for (int i = 0; i < program.Length; i++)
             RAM[512 + i] = program[i];
     }
 
-    ///<summary> Execute a step in the Program (execute the next opcode in memory) </summary>
+    /// Reset the Machine state.
+    /// This will clear out all buffers & memory and reset the PC.
+    public void Reset()
+    {
+        ClearDisplay();         // Clear the display
+        RAM = new byte[4096];   // Clear memory
+        PC = 512;               // Set PC to start location
+        InitFont();             // Load the built-in font into memory
+    }
+    
+    /// Execute a step in the Program (execute the next opcode in memory)
     public void Step()
     {
-        /// Handle the system clock timers
+        // Handle the system clock timers
         if (!_clock.IsRunning) _clock.Start();
         if (DelayTimer > 0)
         {
@@ -144,20 +152,17 @@ public class CPU
             }
         }
         
-        /// Get the opcode
+        // Get the opcode
         var opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
         
-        /// Increment the ProgramCounter and execute the opcode
+        // Increment the ProgramCounter and execute the opcode
         PC += 2;
         switch ((ushort)(opcode & 0xF000))  // then execute the opcode
         {
             case 0x0000:
                 switch (opcode)
                 {
-                    case 0x00E0: 
-                        for (int i = 0; i < Display.Length; i++) 
-                            Display[i] = 0x000000FF;
-                        break;
+                    case 0x00E0: ClearDisplay(); break;
                     case 0x00EE: PC = Stack.Pop(); break;
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
                 }
@@ -301,8 +306,16 @@ public class CPU
             default: throw new Exception($"Unsupported opcode {opcode:x4}");
         }
     }
+
+    /// Clear the display.
+    /// This sets all values on the display to OFF, resulting in a blank screen.
+    private void ClearDisplay()
+    {
+        for (int i = 0; i < Display.Length; i++) 
+            Display[i] = 0x000000FF;
+    }
     
-    /// Initialize the built in font, storing it in lower portions of memory unused by programs:
+    /// Initialize the built-in font, storing it in lower portions of memory unused by programs:
     /// Programs may also refer to a group of sprites representing the hexadecimal digits 0 through F
     /// These sprites are 5 bytes long, or 8x5 pixels. The data should be stored in the interpreter 
     /// area of Chip-8 memory (0x000 to 0x1FF). - Cowgod
