@@ -22,9 +22,10 @@ public class SDL_GL_BindingsContext : IBindingsContext
 /// </summary>
 public static class Program
 {
-    private const int width  = 64;
-    private const int height = 32;
-    private const int scale  = 8;
+    private const int menuH    = 20;
+    private const int screenW  = 64;
+    private const int screenH  = 32;
+    private const int scale    = 16;
     
     private static void Main(string[] args)
     {
@@ -62,7 +63,8 @@ public static class Program
         nint window = SDL_CreateWindow(
             "CHIP-8", 
             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-            width * scale, height * scale,
+            (screenW * scale),
+            (screenH * scale) + menuH,
             SDL_WindowFlags.SDL_WINDOW_OPENGL);
 
         if (window == 0)
@@ -78,14 +80,14 @@ public static class Program
         SDL_GL_SetSwapInterval(1);                  // VSync
 
         GL.LoadBindings(new SDL_GL_BindingsContext());
-        GL.Viewport(0, 0, width * scale, height * scale);
+        GL.Viewport(0, 0, screenW * scale, screenH * scale);
         GL.ClearColor(1f, 0f, 0f, 1f);
         
         // --------------------------------------------------------------------
         //      VM Components
         // --------------------------------------------------------------------
         CPU          cpu      = new();
-        RenderEngine renderer = new(width, height, scale);
+        RenderEngine renderer = new(screenW, screenH, scale);
         AudioEngine  _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
         InputHandler input    = new(
             () => cpu.WaitingForKeyPress,
