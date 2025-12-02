@@ -135,6 +135,13 @@ public class CPU
         ClearDisplay();         // Clear the display
         RAM = new byte[4096];   // Clear memory
         PC = 512;               // Set PC to start location
+        Array.Clear(V);
+        Stack.Clear();
+        DelayTimer = 0;
+        SoundTimer = 0;
+        Keyboard = 0;
+        WaitingForKeyPress = false;
+        I = 0;
         InitFont();             // Load the built-in font into memory
     }
     

@@ -1,5 +1,7 @@
 ﻿// ReSharper disable AccessToDisposedClosure; Disposed after use.
 
+using System.Diagnostics;
+using ImGuiNET;
 using OpenTK;
 using OpenTK.Graphics.OpenGL4;
 using static SDL2.SDL;
@@ -84,22 +86,62 @@ public static class Program
         // --------------------------------------------------------------------
         //      VM Components
         // --------------------------------------------------------------------
-        CPU          cpu      = new();
-        RenderEngine renderer = new(width, height, scale);
-        AudioEngine  _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
-        InputHandler input    = new(
+        CPU             cpu      = new();
+        RenderEngine    renderer = new(width, height, scale);
+        ImGuiController gui      = new(width * scale, height * scale);
+        AudioEngine     _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
+        InputHandler    input    = new(
             () => cpu.WaitingForKeyPress,
             k  => cpu.KeyPressed(k),
             () => cpu.Keyboard,
-            v  => cpu.Keyboard = v);
+            v  => cpu.Keyboard = v,
+            e  => gui.ProcessEvent(e),
+            () => ImGui.GetIO().WantCaptureKeyboard);
         
         // Load initial ROM into program memory (first in list by default)
         cpu.LoadProgram(File.ReadAllBytes(ROMs[currentROM]));
         
         // ClockHandler handles syncing and execution of the Display & CPU
+        Stopwatch frameTimer = Stopwatch.StartNew();
+
         ClockHandler clock = new(cpu.Step, () =>
         {
+            float deltaSeconds = (float)frameTimer.ElapsedTicks / Stopwatch.Frequency;
+            frameTimer.Restart();
+
+            gui.Update(deltaSeconds, width * scale, height * scale);
+
+            ImGui.SetNextWindowPos(new(0, 0));
+            ImGui.SetNextWindowSize(new(width * scale, 40));
+            ImGui.Begin("MenuH", ImGuiWindowFlags.NoTitleBar |
+                                   ImGuiWindowFlags.NoResize   |
+                                   ImGuiWindowFlags.NoMove     |
+                                   ImGuiWindowFlags.NoScrollbar |
+                                   ImGuiWindowFlags.NoSavedSettings);
+
+            ImGui.Text("ROM:");
+            ImGui.SameLine();
+
+            if (ImGui.BeginCombo("##ROMSelector", ROMNames[currentROM]))
+            {
+                for (int i = 0; i < ROMNames.Length; i++)
+                {
+                    bool selected = i == currentROM;
+                    if (ImGui.Selectable(ROMNames[i], selected) && !selected)
+                    {
+                        currentROM = i;
+                        cpu.LoadProgram(File.ReadAllBytes(ROMs[currentROM]));
+                    }
+
+                    if (selected) ImGui.SetItemDefaultFocus();
+                }
+                ImGui.EndCombo();
+            }
+
+            ImGui.End();
+
             renderer.Render(cpu.Display);   // Render CHIP-8 framebuffer
+            gui.Render();
             SDL_GL_SwapWindow(window);      // Present the frame
         });
         
@@ -115,6 +157,7 @@ public static class Program
         // --------------------------------------------------------------------
         //      Cleanup
         // --------------------------------------------------------------------
+        gui.Dispose();
         renderer.Dispose();
         SDL_GL_DeleteContext(glContext);
         SDL_DestroyWindow(window);
