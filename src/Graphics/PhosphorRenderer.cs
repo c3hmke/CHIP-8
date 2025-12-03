@@ -27,14 +27,6 @@ public class PhosphorRenderer (int width, int height, int scale) : RenderEngine 
                 
                 _decayBuffer[i] = v;
             }
-
-            // Convert brightness [0,1] to grayscale RGBA
-            var brightness = (byte)(_decayBuffer[i] * 255.0f);
-            
-            _drawBuffer[i * 4 + 0] = brightness;       // R
-            _drawBuffer[i * 4 + 1] = brightness;       // G
-            _drawBuffer[i * 4 + 2] = brightness;       // B
-            _drawBuffer[i * 4 + 3] = 255;              // A
         }
 
         base.Render();

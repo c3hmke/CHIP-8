@@ -161,6 +161,17 @@ public class RenderEngine : IDisposable
     /// </summary>
     protected void Render()
     {
+        for (var i = 0; i < _width * _height; i++)
+        {
+            // Convert brightness [0,1] to grayscale RGBA
+            var brightness = (byte)(_decayBuffer[i] * 255.0f);
+            
+            _drawBuffer[i * 4 + 0] = brightness;       // R
+            _drawBuffer[i * 4 + 1] = brightness;       // G
+            _drawBuffer[i * 4 + 2] = brightness;       // B
+            _drawBuffer[i * 4 + 3] = 255;              // A
+        }
+        
         /// Upload to OpenGL texture
         GL.BindTexture(TextureTarget.Texture2D, _textureId);
         unsafe

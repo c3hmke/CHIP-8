@@ -19,17 +19,34 @@ public class LCDRenderer(int width, int height, int scale) : RenderEngine(width,
             _decayBuffer[i] += display[i] == 0xFFFFFFFF 
                 ? (1.0f - _decayBuffer[i]) * RiseRate   // slow rise towards 1.0
                 : (0.0f - _decayBuffer[i]) * FallRate;  // slow fall towards 0.0
-
-
-            // Convert brightness [0,1] to grayscale RGBA
-            var brightness = (byte)(_decayBuffer[i] * 255.0f);
-            
-            _drawBuffer[i * 4 + 0] = brightness;       // R
-            _drawBuffer[i * 4 + 1] = brightness;       // G
-            _drawBuffer[i * 4 + 2] = brightness;       // B
-            _drawBuffer[i * 4 + 3] = 255;              // A
         }
+        
+        ApplyDirectionalSmear(_decayBuffer);
 
         base.Render();
+    }
+    
+    private void ApplyDirectionalSmear(float[] buffer)
+    {
+        // Horizontal smear only (primary artifact of old calculators)
+        for (int y = 0; y < _height; y++)
+        {
+            int row = y * _width;
+
+            float prev = buffer[row]; // left edge
+
+            for (int x = 0; x < _width; x++)
+            {
+                int i = row + x;
+
+                float curr = buffer[i];
+
+                // 70% current, 30% previous pixel in row
+                float smeared = curr * 0.97f + prev * 0.03f;
+
+                buffer[i] = smeared;
+                prev      = smeared;
+            }
+        }
     }
 }
