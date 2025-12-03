@@ -6,6 +6,7 @@ namespace CHIP_8.Graphics;
 /// </summary>
 public class PhosphorRenderer (int width, int height, int scale) : RenderEngine (width, height, scale)
 {
+    /// Phosphor decay parameters; dual decay rate for non-linear decay effect.
     private const float   _qckDecayRate = 0.82f;  // quick rate, initial drop
     private const float   _slwDecayRate = 0.96f;  // slow rate, trails off after
     
