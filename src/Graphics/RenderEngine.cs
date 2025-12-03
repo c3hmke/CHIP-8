@@ -1,31 +1,23 @@
 using OpenTK.Graphics.OpenGL4;
 
-namespace CHIP_8;
+namespace CHIP_8.Graphics;
 
 /// <summary>
-/// Render Engine used to draw graphics to the screen. This uses the display buffer as
-/// is set up by the CPU to actually draw to the screen. The Render function is called
-/// periodically by the ClockHandler to ensure that the cadence is correctly adhered to.
+/// Render Engine used to draw graphics to the screen.
+/// 
+/// Uses the display buffer as is set up by the CPU to actually draw to the screen.
+/// The Render function is called periodically by the ClockHandler to ensure that
+/// the refresh cadence is correctly adhered to.
 /// </summary>
-public sealed class RenderEngine : IDisposable
+public class RenderEngine : IDisposable
 {
     /// W x H of the display in px & scale to draw
-    private readonly int _width, _height, _scale;
+    protected readonly int _width, _height;
+    private readonly   int _scale;
     
-    /// The decay buffer is used to emulate phosphor decay which was present on the
-    /// original hardware used to run these emulators. A lot of the programs flicker
-    /// every time the screen is drawn, however the screens would hide that effect.
-    /// Modern displays respond too quickly and the flicker is very distracting. A
-    /// light decay can be applied to emulate the way phosphor screens would draw the
-    /// graphics. That effect was non-linear with a fast initial drop then a slow tail
-    /// so we use 2 decay rates to get the correct effect and reduce flicker without a
-    /// long tail which wasn't seen on original emulators.
-    private readonly float[] _decayBuffer;           // buffer used for decaying light
-    private const    float   _qckDecayRate = 0.82f;  // quick rate, initial drop
-    private const    float   _slwDecayRate = 0.96f;  // slow rate, trails off after
-
-    /// Used to actually draw the display
-    private readonly byte[] _textureData; // RGBA8
+    /// Double graphics buffers
+    protected readonly float[] _decayBuffer; // buffer used for decaying light
+    protected readonly byte[]  _drawBuffer;  // RGBA8; Used to actually draw the display
 
     /// Class properties
     private readonly int _textureId;
@@ -38,12 +30,12 @@ public sealed class RenderEngine : IDisposable
     /// Build the RenderEngine, this will also create an SDL Window and initialize all
     /// the GraphicsLibrary related configuration to be able to draw correctly to the display.
     /// </summary>
-    public RenderEngine(int width, int height, int scale)
+    protected RenderEngine(int width, int height, int scale)
     {
         _width  = width; _height = height; _scale  = scale;
 
         _decayBuffer = new float[width * height];
-        _textureData = new byte[width * height * 4];
+        _drawBuffer  = new byte[width * height * 4];
         
         const int stride = 4 * sizeof(float);
 
@@ -165,41 +157,15 @@ public sealed class RenderEngine : IDisposable
     }
     
     /// <summary>
-    /// Draw the passed display buffer to the screen.
-    /// Interlaces the display buffer with a phosphor decay layer to emulate the effect.
+    /// Draw to the screen, interlacing the display and decay buffers
     /// </summary>
-    public void Render(uint[] display)
+    protected void Render()
     {
-        /// Update decay buffer based on display state.
-        for (var i = 0; i < _width * _height; i++)
-        {
-            bool pixelOn = display[i] == 0xFFFFFFFF;    // is the pixel lit?
-
-            if (pixelOn) _decayBuffer[i] = 1.0f;        // instant full brightness
-            else                                        // decay old light (phosphor effect)
-            {
-                float v = _decayBuffer[i];
-                
-                v = MathF.Pow(v, 1.35f);                            // non-linear tail curve (emulates phosphor)
-                v *= (v > 0.5f ? _qckDecayRate : _slwDecayRate);    // higher gamma yields slower fade at low intensities
-                
-                _decayBuffer[i] = v;
-            }
-
-            // Convert brightness [0,1] to grayscale RGBA
-            var brightness = (byte)(_decayBuffer[i] * 255.0f);
-            
-            _textureData[i * 4 + 0] = brightness;       // R
-            _textureData[i * 4 + 1] = brightness;       // G
-            _textureData[i * 4 + 2] = brightness;       // B
-            _textureData[i * 4 + 3] = 255;              // A
-        }
-
         /// Upload to OpenGL texture
         GL.BindTexture(TextureTarget.Texture2D, _textureId);
         unsafe
         {
-            fixed (byte* ptr = _textureData)
+            fixed (byte* ptr = _drawBuffer)
             {
                 GL.TexSubImage2D(
                     target:  TextureTarget.Texture2D,
@@ -215,7 +181,7 @@ public sealed class RenderEngine : IDisposable
         }
 
         /// Draw quad
-        int padding = 16;
+        const int padding = 16;
         GL.Viewport(
             x:      padding,
             y:      padding,
@@ -246,5 +212,7 @@ public sealed class RenderEngine : IDisposable
         if (_ebo != 0)           GL.DeleteBuffer(_ebo);
         if (_vao != 0)           GL.DeleteVertexArray(_vao);
         if (_shaderProgram != 0) GL.DeleteProgram(_shaderProgram);
+        
+        GC.SuppressFinalize(this);
     }
 }

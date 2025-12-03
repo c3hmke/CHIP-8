@@ -2,6 +2,7 @@
 
 using OpenTK;
 using OpenTK.Graphics.OpenGL4;
+using CHIP_8.Graphics;
 using static SDL2.SDL;
 
 namespace CHIP_8;
@@ -86,10 +87,10 @@ public static class Program
         // --------------------------------------------------------------------
         //      VM Components
         // --------------------------------------------------------------------
-        CPU          cpu      = new();
-        RenderEngine renderer = new(screenW, screenH, scale);
-        AudioEngine  _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
-        InputHandler input    = new(
+        CPU              cpu      = new();
+        PhosphorRenderer renderer = new(screenW, screenH, scale);
+        AudioEngine      _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
+        InputHandler     input    = new(
             () => cpu.WaitingForKeyPress,
             k  => cpu.KeyPressed(k),
             () => cpu.Keyboard,
