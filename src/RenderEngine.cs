@@ -15,12 +15,14 @@ public sealed class RenderEngine : IDisposable
     /// The decay buffer is used to emulate phosphor decay which was present on the
     /// original hardware used to run these emulators. A lot of the programs flicker
     /// every time the screen is drawn, however the screens would hide that effect.
-    /// Modern displays respond too quickly and the flicker is very distracting.
-    /// DecayRate can be used to modify how long the decay trails are, however the
-    /// screen size also affects how noticeable the flicker is through the decay,
-    /// so a correct number is guesswork for the most part.
-    private readonly float[] _decayBuffer;
-    private const    float   DecayRate = 0.9f;
+    /// Modern displays respond too quickly and the flicker is very distracting. A
+    /// light decay can be applied to emulate the way phosphor screens would draw the
+    /// graphics. That effect was non-linear with a fast initial drop then a slow tail
+    /// so we use 2 decay rates to get the correct effect and reduce flicker without a
+    /// long tail which wasn't seen on original emulators.
+    private readonly float[] _decayBuffer;           // buffer used for decaying light
+    private const    float   _qckDecayRate = 0.82f;  // quick rate, initial drop
+    private const    float   _slwDecayRate = 0.96f;  // slow rate, trails off after
 
     /// Used to actually draw the display
     private readonly byte[] _textureData; // RGBA8
@@ -174,7 +176,15 @@ public sealed class RenderEngine : IDisposable
             bool pixelOn = display[i] == 0xFFFFFFFF;    // is the pixel lit?
 
             if (pixelOn) _decayBuffer[i] = 1.0f;        // instant full brightness
-            else         _decayBuffer[i] *= DecayRate;  // decay old light
+            else                                        // decay old light (phosphor effect)
+            {
+                float v = _decayBuffer[i];
+                
+                v = MathF.Pow(v, 1.35f);                            // non-linear tail curve (emulates phosphor)
+                v *= (v > 0.5f ? _qckDecayRate : _slwDecayRate);    // higher gamma yields slower fade at low intensities
+                
+                _decayBuffer[i] = v;
+            }
 
             // Convert brightness [0,1] to grayscale RGBA
             var brightness = (byte)(_decayBuffer[i] * 255.0f);
