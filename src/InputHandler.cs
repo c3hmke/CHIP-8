@@ -41,6 +41,34 @@ public class InputHandler(
         }
     }
     
+    public void HandleEvent(ref SDL_Event sdlEvent)
+    {
+        ushort keyboard = getKeyboard();
+        
+        int key = keycodeToIndex(sdlEvent.key.keysym.sym);
+        switch (sdlEvent.type)
+        {
+            case SDL_EventType.SDL_QUIT: 
+                Running = false;
+                break;
+                
+            case SDL_EventType.SDL_KEYDOWN:
+                keyboard |= (ushort)(1 << key);
+                setKeyboard(keyboard);
+                if (isWaitingForKey()) onKeyPressed((byte)key);
+                break;
+                
+            case SDL_EventType.SDL_KEYUP:
+                keyboard &= (ushort)~(1 << key);
+                setKeyboard(keyboard);
+                break;
+                
+            default:
+                // Let anything else simply fall through
+                break;
+        }
+    }
+    
     private static int keycodeToIndex(SDL_Keycode keycode)
     {
         var key = (int)keycode;                     // ascii int value for the key pressed

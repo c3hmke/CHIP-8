@@ -3,6 +3,7 @@
 using OpenTK;
 using OpenTK.Graphics.OpenGL4;
 using CHIP_8.Graphics;
+using ImGuiNET;
 using static SDL2.SDL;
 
 namespace CHIP_8;
@@ -67,7 +68,7 @@ public static class Program
             (screenW * scale),
             (screenH * scale) + menuH,
             SDL_WindowFlags.SDL_WINDOW_OPENGL);
-
+        
         if (window == 0)
             throw new Exception($"SDL_CreateWindow FAIL: {SDL_GetError()}");
 
@@ -83,6 +84,12 @@ public static class Program
         GL.LoadBindings(new SDL_GL_BindingsContext());
         GL.Viewport(0, 0, screenW * scale, screenH * scale);
         GL.ClearColor(1f, 0f, 0f, 1f);
+        
+        // --------------------------------------------------------------------
+        //      ImGUI
+        // --------------------------------------------------------------------
+        SDL_GetWindowSize(window, out int winW, out int winH);
+        var imgui = new ImGuiRenderer(winW, winH);        
         
         // --------------------------------------------------------------------
         //      VM Components
@@ -103,16 +110,64 @@ public static class Program
         ClockHandler clock = new(cpu.Step, () =>
         {
             renderer.Render(cpu.Display);   // Render CHIP-8 framebuffer
-            SDL_GL_SwapWindow(window);      // Present the frame
         });
         
         // --------------------------------------------------------------------
         //      Main program loop
         // --------------------------------------------------------------------
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        float lastTime = 0f;
+        
         while (input.Running)
         {
-            clock.Tick();      // CPU steps and renderer.Render(cpu.Display)
-            input.PollEvent(); // Handle SDL events for input handler
+            // Timing for ImGUI
+            float now = (float)stopwatch.Elapsed.TotalSeconds;
+            float delta = now - lastTime;
+            lastTime = now;
+            
+            // Tick ImGUI
+            imgui.UpdateFrame(delta, winW, winH); 
+            
+            // Demo Window
+            if (ImGui.BeginMainMenuBar())
+            {
+                if (ImGui.BeginMenu("Foo"))
+                {
+                    if (ImGui.MenuItem("Bar")) { }
+                    if (ImGui.MenuItem("Baz")) { }
+
+                    ImGui.Separator();
+
+                    if (ImGui.MenuItem("Gib")) { }
+
+                    ImGui.EndMenu();
+                }
+
+                if (ImGui.BeginMenu("Ringus"))
+                {
+                    if (ImGui.MenuItem("Dingus")) { }
+                    if (ImGui.MenuItem("Pingus")) { }
+                    ImGui.EndMenu();
+                }
+
+                ImGui.EndMainMenuBar();
+            }
+            
+            
+            clock.Tick();        // CPU steps and renderer.Render(cpu.Display)
+            //input.PollEvent(); // Handle SDL events for input handler
+
+            // Drain SDL event queue
+            while (SDL_PollEvent(out SDL_Event e) != 0)
+            {
+                input.HandleEvent(ref e);  // Handle SDL events for input handler
+                imgui.ProcessEvent(ref e); // Handle SDL events for ImGUI
+            }
+            
+            // Render ImGUI
+            imgui.Render();
+            
+            SDL_GL_SwapWindow(window);
         }
 
         // --------------------------------------------------------------------
