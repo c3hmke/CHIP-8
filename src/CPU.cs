@@ -204,7 +204,7 @@ public class CPU
                         V[vx] = (byte)((V[vx] + V[vy]) & 0x00FF);
                         break;
                     case 5:
-                        V[15] = (byte)(V[vx] > V[vy] ? 1 : 0);
+                        V[15] = (byte)(V[vx] >= V[vy] ? 1 : 0);
                         V[vx] = (byte)((V[vx] - V[vy]) & 0x00FF);
                         break;
                     case 6:
@@ -212,7 +212,7 @@ public class CPU
                         V[vx] = (byte)(V[vx] >> 1);
                         break;
                     case 7:
-                        V[15] = (byte)(V[vy] > V[vx] ? 1 : 0);
+                        V[15] = (byte)(V[vy] >= V[vx] ? 1 : 0);
                         V[vx] = (byte)((V[vy] - V[vx]) & 0x00FF);
                         break;
                     case 14:
