@@ -234,7 +234,7 @@ public class CPU
                 PC = (ushort)((opcode & 0x0FFF) + V[0]);
                 break;
             case 0xC000: // ( CXNN )
-                V[(opcode & 0x0F00) >> 8] = (byte)(_rng.Next() & opcode & 0x00FF);
+                V[(opcode & 0x0F00) >> 8] = (byte)(_rng.Next() & (opcode & 0x00FF));
                 break;
             
             case 0xD000: // ( DXYN )
