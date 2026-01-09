@@ -259,7 +259,7 @@ public class CPU
                         bool oldPx = Display[di] == 0xFFFFFFFF;         // check the status of the current pixel
                         bool newPx = !oldPx;                            // XOR : toggle the pixel
 
-                        if (oldPx && !newPx) V[15] = 1;                 // flag that the flip occured
+                        if (oldPx) V[15] = 1;                           // flag that the flip occured
                         Display[di] = newPx ? 0xFFFFFFFF : 0x000000FF;  // then draw the new pixel to the display
                     }
                 }
