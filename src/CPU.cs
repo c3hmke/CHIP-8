@@ -271,14 +271,13 @@ public class CPU
                 break;
 
             case 0xE000: // Keyboard input opcodes in E, range
+                int  key     = V[(opcode & 0x00F0) >> 8];
+                bool pressed = (Keyboard & (1 << key)) != 0;
+                
                 switch (opcode & 0x00FF)
                 {
-                    case 0x009E:
-                        if ((Keyboard >> V[(opcode & 0x0F00) >> 8] & 0x01) == 0x01) PC += 2;
-                        break;
-                    case 0x00A1:
-                        if ((Keyboard >> V[(opcode & 0x0F00) >> 8] & 0x01) != 0x01) PC += 2;
-                        break;
+                    case 0x009E: if (pressed) PC += 2; break;
+                    case 0x00A1: if (!pressed) PC += 2; break;
 
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
                 }
