@@ -95,19 +95,22 @@ namespace CHIP_8;
 public class CPU
 {
     /// Define the properties of the VirtualMachine so that it can be correctly simulated.
-    private byte[] RAM = new byte[4096];                 // 4Kb Memory
-    private readonly byte[] V = new byte[16];            // Registers [V0 -> VF]
-    private ushort I = 0;                                // Address register with 16-bits
-    private ushort PC = 0;                               // Program Counter
+    private byte[]          RAM = new byte[4096];        // 4Kb Memory
+    private readonly byte[] V   = new byte[16];          // Registers [V0 -> VF]
+    private ushort          I   = 0;                     // Address register with 16-bits
+    private ushort          PC  = 0;                     // Program Counter
     private readonly Stack<ushort> Stack = new();        // Stack (currently 'unlimited')
+    
     private byte DelayTimer;                             // DelayTimer used for timed events
     public  byte SoundTimer;                             // SoundTimer used for beep
+    
     public  ushort Keyboard;                             // Use the lower4 bits for 16 keys
     public  readonly uint[] Display = new uint[64 * 32]; // 64x32 display
     
     /// Clock used for functionality of timers
     private readonly Stopwatch _clock = new();
-    private readonly int _ticks60hz   = (int)(Stopwatch.Frequency * 0.016);
+    private long _timerAccumulator = 0;
+    private long _timerFrequency   = (Stopwatch.Frequency / 60);
 
     /// Random number generator used to randomize some events
     private readonly Random _rng = new (Environment.TickCount);
@@ -147,15 +150,7 @@ public class CPU
     public void Step()
     {
         // Handle the system clock timers
-        if (!_clock.IsRunning) _clock.Start();
-        if (DelayTimer > 0)
-        {
-            if (_clock.ElapsedTicks > _ticks60hz)
-            {
-                DelayTimer--;
-                _clock.Restart();
-            }
-        }
+        UpdateTimers();
         
         // Get the opcode
         var opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
@@ -321,6 +316,25 @@ public class CPU
     {
         for (int i = 0; i < Display.Length; i++) 
             Display[i] = 0x000000FF;
+    }
+
+    /// Updates the timers at _timerFrequency Hz
+    private void UpdateTimers()
+    {
+        if (!_clock.IsRunning) _clock.Start();
+        
+        long elapsed = _clock.ElapsedTicks;
+        _clock.Restart();
+
+        _timerAccumulator += elapsed;
+
+        while (_timerAccumulator >= _timerFrequency)
+        {
+            if (DelayTimer > 0) DelayTimer--;
+            if (SoundTimer > 0) SoundTimer--;
+            
+            _timerAccumulator -= _timerFrequency;
+        }
     }
     
     /// Initialize the built-in font, storing it in lower portions of memory unused by programs:
