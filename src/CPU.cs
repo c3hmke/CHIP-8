@@ -266,7 +266,7 @@ public class CPU
                 break;
 
             case 0xE000: // Keyboard input opcodes in E, range
-                int  key     = V[(opcode & 0x00F0) >> 8];
+                int  key     = V[(opcode & 0x0F00) >> 8];
                 bool pressed = (Keyboard & (1 << key)) != 0;
                 
                 switch (opcode & 0x00FF)
