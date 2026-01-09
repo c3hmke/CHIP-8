@@ -7,6 +7,11 @@ namespace CHIP_8;
 /// This class contains all the implementation details needed to load and run CHIP-8 programs, as well as execute other
 /// VM related operations and tasks. Full specifications for the Virtual Machine and opcodes can be found below.
 ///
+/// Note that this interpreter keeps the original behaviour of CHIP8, which includes some bugs which were later fixed by
+/// Super-CHIP8 and frequently used by modern emulators:
+///     - 8XY6 / 8XYE → shift Vy instead of Vx
+///     - FX55 / FX65 → Increment I instead of leaving it unchanged
+///
 /// # VM Specifications ------------------------------------------------------------------------------------------------
 /// 4Kb Memory:     4096 memory locations, all of which are 8-bits wide (where the term CHIP-8 originated from).        
 ///                 The interpreter itself occupies the first 512 bytes of memory space on the machine, for this reason 
@@ -208,16 +213,16 @@ public class CPU
                         V[vx] = (byte)((V[vx] - V[vy]) & 0x00FF);
                         break;
                     case 6:
-                        V[15] = (byte)(V[vx] & 0x0001);
-                        V[vx] = (byte)(V[vx] >> 1);
+                        V[15] = (byte)(V[vy] & 0x0001);
+                        V[vx] = (byte)(V[vy] >> 1);
                         break;
                     case 7:
                         V[15] = (byte)(V[vy] >= V[vx] ? 1 : 0);
                         V[vx] = (byte)((V[vy] - V[vx]) & 0x00FF);
                         break;
                     case 14:
-                        V[15] = (byte)((V[vx] & 0x80) == 0x80 ? 1 : 0);
-                        V[vx] = (byte)(V[vx] << 1);
+                        V[15] = (byte)((V[vy] & 0x80) == 0x80 ? 1 : 0);
+                        V[vx] = (byte)(V[vy] << 1);
                         break;
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
 
@@ -295,10 +300,14 @@ public class CPU
                         RAM[I + 2] = (byte)(V[tx] % 10);
                         break;
                     case 0x55:
-                        for (int i = 0; i <= tx; i++) RAM[I + i] = V[i];
+                        for (int i = 0; i <= tx; i++)
+                            RAM[I + i] = V[i];
+                        I += (ushort)(tx + 1);
                         break;
                     case 0x65:
-                        for (int i = 0; i <= tx; i++) V[i] = RAM[I + i];
+                        for (int i = 0; i <= tx; i++)
+                            V[i] = RAM[I + i];
+                        I += (ushort)(tx + 1);
                         break;
                 }
                 break;

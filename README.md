@@ -14,4 +14,14 @@ Some references:
 
 ---
 
-ROMS curtosy of [Zophar](https://www.zophar.net/pdroms/chip8/chip-8-games-pack.html)
+## Notes
+
+Opcodes 8XY6 and 8XYE use the Vy register instead of Vx. <br/>
+Opcodes FX55 and FX65 will increment I, they shouldn't.  <br/>
+
+Both behaviours are bugs in the original interpreters, they're fixed in Super-CHIP8 and most modern emulators will also include the fixes.<br/>
+I've kept it here for sake of compatibility with older ROMs.
+
+---
+
+ROMS courtesy of [Zophar](https://www.zophar.net/pdroms/chip8/chip-8-games-pack.html)
