@@ -249,11 +249,11 @@ public class CPU
                     byte sprite = RAM[I + i];                           // the location drawing starts
                     for (int j = 0; j < 8; j++)                         // loop over each of the 8-bits
                     {   
-                        var px = (byte)(sprite >> 7 - j & 0x01);    // extract this bit of the sprite (1=draw, 0=no)
+                        var px = (byte)((sprite >> (7 - j)) & 0x01);    // extract this bit of the sprite (1=draw, 0=no)
                         if (px == 0) continue;                          // XOR with 0 does nothing, skip
                         
-                        int  dx = x + j & 63;                         // x position on the display (faster than %64)
-                        int  dy = y + i & 31;                         // y position on the display (faster than %32)
+                        int  dx = x + j & 63;                           // x position on the display (faster than %64)
+                        int  dy = y + i & 31;                           // y position on the display (faster than %32)
                         int  di = dx + dy * 64;                         // index on the display grid
 
                         bool oldPx = Display[di] == 0xFFFFFFFF;         // check the status of the current pixel
