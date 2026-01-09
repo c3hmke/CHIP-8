@@ -132,10 +132,10 @@ public class CPU
     /// This will clear out all buffers & memory and reset the PC.
     public void Reset()
     {
-        ClearDisplay();         // Clear the display
         RAM = new byte[4096];   // Clear memory
         PC = 512;               // Set PC to start location
         InitFont();             // Load the built-in font into memory
+        ClearDisplay();         // Clear the display
     }
     
     /// Execute a step in the Program (execute the next opcode in memory)
@@ -252,8 +252,8 @@ public class CPU
                         var px = (byte)((sprite >> (7 - j)) & 0x01);    // extract this bit of the sprite (1=draw, 0=no)
                         if (px == 0) continue;                          // XOR with 0 does nothing, skip
                         
-                        int  dx = x + j & 63;                           // x position on the display (faster than %64)
-                        int  dy = y + i & 31;                           // y position on the display (faster than %32)
+                        int  dx = (x + j) & 63;                         // x position on the display (faster than %64)
+                        int  dy = (y + i) & 31;                         // y position on the display (faster than %32)
                         int  di = dx + dy * 64;                         // index on the display grid
 
                         bool oldPx = Display[di] == 0xFFFFFFFF;         // check the status of the current pixel
