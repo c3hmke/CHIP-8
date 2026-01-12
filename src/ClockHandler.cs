@@ -91,7 +91,7 @@ public class ClockHandler (Action cpuStep, Action frameStep, int cpuHz = 700, in
         while (_frameAccumulator >= _frameTicks)
         {
             frameStep();
-            _frameAccumulator -= _frameTicks;
+            _frameAccumulator = 0; // discard any missed ticks
         }
     }
 }
