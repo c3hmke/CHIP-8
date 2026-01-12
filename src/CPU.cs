@@ -97,13 +97,19 @@ namespace CHIP_8;
 public class CPU
 {
     /// Some constants to define program behaviour
-    private const int STACK_SIZE = 12;
+    private const int STACK_SIZE      = 12;     // Layers
+    private const int MEMORY_SIZE     = 4096;   // Kilobytes
+    private const int NUM_REGISTERS   = 16;     // Number of Program registers available
+    private const int PC_START_LOC    = 512;    // Where instructions begin in RAM
+    private const int DISPLAY_WIDTH   = 64;     // Pixel-width of the display
+    private const int DISPLAY_HEIGHT  = 32;     // Pixel-height of the display
+    private const int CLOCK_FREQUENCY = 60;     // Hz the clocks should run at
     
     /// Define the properties of the VirtualMachine so that it can be correctly simulated.
-    private byte[]          RAM = new byte[4096];               // 4Kb Memory
-    private readonly byte[] V   = new byte[16];                 // Registers [V0 -> VF]
+    private byte[]          RAM = new byte[MEMORY_SIZE];        // 4Kb Memory
+    private readonly byte[] V   = new byte[NUM_REGISTERS];      // Registers [V0 -> VF]
     private ushort          I   = 0;                            // Address register with 16-bits
-    private ushort          PC  = 0;                            // Program Counter
+    private ushort          PC  = PC_START_LOC;                 // Program Counter
     
     private readonly ushort[] Stack = new ushort[STACK_SIZE];   // Stack (limited to depth of 12)
     private int _stackPointer = 0;                              // Index for top of stack
@@ -113,11 +119,11 @@ public class CPU
     private long _timerAccumulator;                             // Accumulator used to keep timers in syn
     
     public  ushort Keyboard;                                    // Use the lower4 bits for 16 keys
-    public  readonly uint[] Display = new uint[64 * 32];        // 64x32 display
+    public  readonly uint[] Display = new uint[DISPLAY_WIDTH * DISPLAY_HEIGHT];   // 64x32 display
     
     /// Clock used for functionality of timers
     private readonly Stopwatch _clock = new();
-    private readonly long _timerFrequency = (Stopwatch.Frequency / 60);
+    private readonly long _timerFrequency = (Stopwatch.Frequency / CLOCK_FREQUENCY);
 
     /// Random number generator used to randomize some events
     private readonly Random _rng = new (Environment.TickCount);
@@ -140,19 +146,19 @@ public class CPU
 
         // Load in the program passed to this function
         for (int i = 0; i < program.Length; i++)
-            RAM[512 + i] = program[i];
+            RAM[PC_START_LOC + i] = program[i];
     }
 
     /// Reset the Machine state.
     /// This will clear out all buffers & memory and reset the PC.
     public void Reset()
     {
-        RAM = new byte[4096];   // Clear memory
-        PC = 512;               // Set PC to start location
-        I = 0;                  // Reset the address register location
-        Array.Clear(V);         // Clear the registers
-        Array.Clear(Stack);     // Empty out the stack
-        _stackPointer = 0;      // Reset the stack pointer location
+        RAM = new byte[MEMORY_SIZE];   // Clear memory
+        PC = PC_START_LOC;             // Set PC to start location
+        I = 0;                         // Reset the address register location
+        Array.Clear(V);                // Clear the registers
+        Array.Clear(Stack);            // Empty out the stack
+        _stackPointer = 0;             // Reset the stack pointer location
         
         // Clear out any other timers, accumulators, & flags
         DelayTimer = SoundTimer = 0;
