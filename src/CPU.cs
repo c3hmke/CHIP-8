@@ -112,12 +112,13 @@ public class CPU
     private ushort          PC  = PC_START_LOC;                 // Program Counter
     
     private readonly ushort[] Stack = new ushort[STACK_SIZE];   // Stack (limited to depth of 12)
-    private int _stackPointer = 0;                              // Index for top of stack
+    private int _stackPointer;                                  // Index for top of stack
     
     private byte DelayTimer;                                    // DelayTimer used for timed events
     public  byte SoundTimer;                                    // SoundTimer used for beep
     private long _timerAccumulator;                             // Accumulator used to keep timers in sync
-    
+    private bool _paused;                                       // Allows Pausing / Unpausing the emulation
+
     public  ushort Keyboard;                                    // Use the lower4 bits for 16 keys
     public  readonly uint[] Display = new uint[DISPLAY_WIDTH * DISPLAY_HEIGHT];   // 64x32 display
     
@@ -167,6 +168,8 @@ public class CPU
         // Clear out any other timers, accumulators, & flags
         DelayTimer = SoundTimer = 0;
         _timerAccumulator = 0;
+        _paused = false;
+
         Keyboard = 0;
         WaitingForKeyPress = false;
         _waitingKeyTargetReg = 0;
@@ -174,14 +177,35 @@ public class CPU
         InitFont();             // Load the built-in font into memory
         ClearDisplay();         // Clear the display
     }
+
+    /// Pause the emulation
+    public void Pause()
+    {
+        _paused = true;
+        _clock.Stop();
+    }
+
+    /// Resume the emulation
+    public void Resume()
+    {
+        // This stops 'Resume' from messing with timers if called while running
+        if (!_paused) return;
+        
+        _paused = false;
+        _timerAccumulator = 0;
+        _clock.Restart();
+    }
     
     /// Execute a step in the Program (execute the next opcode in memory)
     public void Step()
     {
+        // Don't step if emulation is paused
+        if (_paused) return;
+        
         // Handle the system clock timers
         UpdateTimers();
 
-        // Simply return if blocked for input
+        // Don't step if blocking for input
         if (WaitingForKeyPress) return;
         
         // Get the opcode, increment the PC and execute

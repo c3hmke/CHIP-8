@@ -8,6 +8,8 @@ public class InputHandler(
     Func<ushort>   getKeyboard,
     Action<ushort> setKeyboard)
 {
+    
+    
     public void HandleKeypress(SDL_Event e)
     {
         ushort keyboard = getKeyboard();

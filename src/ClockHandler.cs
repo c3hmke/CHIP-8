@@ -9,7 +9,7 @@ namespace CHIP_8;
 public class ClockHandler (Action cpuStep, Action frameStep, int cpuHz = 700, int frameHz = 60)
 {
     /// Used to keep display & CPU clocks synced
-    private long accumulator;
+    private long _accumulator;
     
     /// Configure the CPU clock, used for executing opcodes
     private readonly Stopwatch _cpuTimer = Stopwatch.StartNew();        // Timer for the CPU clock
@@ -51,12 +51,12 @@ public class ClockHandler (Action cpuStep, Action frameStep, int cpuHz = 700, in
         long elapsed = _frameTimer.ElapsedTicks;
         _frameTimer.Restart();
         
-        accumulator += elapsed;
+        _accumulator += elapsed;
         
-        while (accumulator >= _frameTicks)
+        while (_accumulator >= _frameTicks)
         {
             frameStep();
-            accumulator -= _frameTicks;
+            _accumulator -= _frameTicks;
         }
     }
 }

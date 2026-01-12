@@ -109,11 +109,9 @@ public static class Program
         // --------------------------------------------------------------------
         //      Main program loop
         // --------------------------------------------------------------------
-        bool running = true;
         while (true)
         {
-            // Run the emulation in running state
-            if (running) clock.Tick();
+            clock.Tick();
             
             while (SDL_PollEvent(out SDL_Event e) != 0)
             {
@@ -123,21 +121,26 @@ public static class Program
 
                     case SDL_EventType.SDL_WINDOWEVENT:
                     {
-                        running = e.window.windowEvent switch
+                        switch (e.window.windowEvent)
                         {
-                            SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST   => false,
-                            SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED => true,
-                            _ => running
-                        };
+                            case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
+                            {
+                                cpu.Pause();
+                                break;
+                            }
+                            case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
+                            {
+                                cpu.Resume();
+                                break;
+                            }
+                        }
+
                         break;
                     }
                     
-                    case SDL_EventType.SDL_KEYDOWN:
-                    case SDL_EventType.SDL_KEYUP:
+                    case SDL_EventType.SDL_KEYDOWN: case SDL_EventType.SDL_KEYUP:
                         input.HandleKeypress(e);
                         break;
-                    
-                    default: break;
                 }
             }
         }
