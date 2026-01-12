@@ -2,7 +2,7 @@ using static SDL2.SDL;
 
 namespace CHIP_8;
 
-public class InputHandler(
+public class InputDriver(
     Func<bool>     isWaitingForKey,
     Action<byte>   onKeyPressed,
     Func<ushort>   getKeyboard,

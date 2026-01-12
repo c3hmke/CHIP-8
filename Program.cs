@@ -92,10 +92,10 @@ public static class Program
         // --------------------------------------------------------------------
         CHIP8            machine  = new ();
         PhosphorRenderer renderer = new (ScreenW, ScreenH, Scale);
-        AudioEngine      audio    = new (
+        AudioDriver      audio    = new (
                                         () => machine.SoundTimer,
                                         v => machine.SoundTimer = v);
-        InputHandler     io = new(
+        InputDriver     input = new(
                                         () => machine.AwaitingInput,
                                         k  => machine.Input(k),
                                         () => machine.Keyboard,
@@ -145,7 +145,7 @@ public static class Program
                     }
                     
                     case SDL_EventType.SDL_KEYDOWN: case SDL_EventType.SDL_KEYUP:
-                        io.HandleKeypress(e);
+                        input.HandleKeypress(e);
                         break;
                 }
             }

@@ -3,7 +3,7 @@ using static SDL2.SDL;
 
 namespace CHIP_8;
 
-public sealed class AudioEngine
+public sealed class AudioDriver
 {
     
     private int _sample, _beeps;
@@ -14,7 +14,7 @@ public sealed class AudioEngine
     /// This needs to be stored to prevent it from being garbage collected
     private readonly SDL_AudioCallback _callback;
 
-    public AudioEngine(Func<byte> getSoundTimer, Action<byte> setSoundTimer)
+    public AudioDriver(Func<byte> getSoundTimer, Action<byte> setSoundTimer)
     {
         _getSoundTimer = getSoundTimer;
         _setSoundTimer = setSoundTimer;
