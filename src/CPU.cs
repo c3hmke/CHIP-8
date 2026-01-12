@@ -97,8 +97,8 @@ namespace CHIP_8;
 public class CPU
 {
     /// Some constants to define program behaviour
-    private const int STACK_SIZE      = 12;     // Layers
-    private const int MEMORY_SIZE     = 4096;   // Kilobytes
+    private const int STACK_SIZE      = 12;     // Number of layers in the stack
+    private const int MEMORY_SIZE     = 4096;   // Number of bytes in memory
     private const int NUM_REGISTERS   = 16;     // Number of Program registers available
     private const int PC_START_LOC    = 512;    // Where instructions begin in RAM
     private const int DISPLAY_WIDTH   = 64;     // Pixel-width of the display
@@ -116,7 +116,7 @@ public class CPU
     
     private byte DelayTimer;                                    // DelayTimer used for timed events
     public  byte SoundTimer;                                    // SoundTimer used for beep
-    private long _timerAccumulator;                             // Accumulator used to keep timers in syn
+    private long _timerAccumulator;                             // Accumulator used to keep timers in sync
     
     public  ushort Keyboard;                                    // Use the lower4 bits for 16 keys
     public  readonly uint[] Display = new uint[DISPLAY_WIDTH * DISPLAY_HEIGHT];   // 64x32 display
@@ -341,9 +341,9 @@ public class CPU
                         var px = (byte)((sprite >> (7 - j)) & 0x01);    // extract this bit of the sprite (1=draw, 0=no)
                         if (px == 0) continue;                          // XOR with 0 does nothing, skip
                         
-                        int  dx = (x + j) & 63;                         // x position on the display (faster than %64)
-                        int  dy = (y + i) & 31;                         // y position on the display (faster than %32)
-                        int  di = dx + dy * 64;                         // index on the display grid
+                        int  dx = (x + j) & (DISPLAY_WIDTH - 1);        // x position on the display (faster than %64)
+                        int  dy = (y + i) & (DISPLAY_HEIGHT - 1);       // y position on the display (faster than %32)
+                        int  di = dx + dy * DISPLAY_WIDTH;              // index on the display grid
 
                         bool oldPx = Display[di] == 0xFFFFFFFF;         // check the status of the current pixel
                         bool newPx = !oldPx;                            // XOR : toggle the pixel
