@@ -182,42 +182,73 @@ public class CPU
                 switch (opcode)
                 {
                     case 0x00E0:
+                    {
                         ClearDisplay();
                         break;
+                    }
+
                     case 0x00EE:
+                    {
                         if (_stackPointer == 0)
                             throw new InvalidOperationException("Stack underflow");
+                        
                         PC = Stack[--_stackPointer];
                         break;
+                    }
+                        
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
                 }
                 break;
+
             case 0x1000: // ( 1NNN )
+            {
                 PC = (ushort)(opcode & 0x0FFF);
                 break;
+            }
+
             case 0x2000: // ( 2NNN )
+            {
                 if (_stackPointer >= STACK_SIZE)
                     throw new InvalidOperationException("Stack overflow");
+                
                 Stack[_stackPointer++] = PC;
                 PC = (ushort)(opcode & 0x0FFF);
+                
                 break;
+            }
+
             case 0x3000: // ( 3XNN )
+            {
                 if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) PC += 2;
                 break;
+            }
+
             case 0x4000: // ( 4XNN )
+            {
                 if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) PC += 2;
                 break;
+            }
+
             case 0x5000: // ( 5XY0 )
+            {
                 if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4]) PC += 2;
                 break;
+            }
+
             case 0x6000: // ( 6XNN )
+            {
                 V[(opcode & 0x0F00) >> 8] = (byte)(opcode & 0x00FF);
                 break;
+            }
+
             case 0x7000: // ( 7XNN )
+            {
                 V[(opcode & 0x0F00) >> 8] += (byte)(opcode & 0x00FF);
                 break;
+            }
 
             case 0x8000: // (ALU in 8 range, switches on lowest 4-bits)
+            {
                 int vx = (opcode & 0x0F00) >> 8;
                 int vy = (opcode & 0x00F0) >> 4;
                 switch (opcode & 0x000F)
@@ -249,22 +280,36 @@ public class CPU
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
 
                 }
+                
                 break;
+            }
 
             case 0x9000: // ( 9XY0 )
+            {
                 if (V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]) PC += 2;
                 break;
+            }
+
             case 0xA000: // ( ANNN )
+            {
                 I = (ushort)(opcode & 0x0FFF);
                 break;
+            }
+
             case 0xB000: // ( BNNN )
+            {
                 PC = (ushort)((opcode & 0x0FFF) + V[0]);
                 break;
+            }
+
             case 0xC000: // ( CXNN )
+            {
                 V[(opcode & 0x0F00) >> 8] = (byte)(_rng.Next() & (opcode & 0x00FF));
                 break;
-            
+            }
+
             case 0xD000: // ( DXYN )
+            {
                 int x = V[(opcode & 0x0F00) >> 8];                      // x coordinate
                 int y = V[(opcode & 0x00F0) >> 4];                      // y coordinate
                 int n = opcode & 0x000F;                                // n lines to draw
@@ -290,9 +335,12 @@ public class CPU
                         Display[di] = newPx ? 0xFFFFFFFF : 0x000000FF;  // then draw the new pixel to the display
                     }
                 }
+                
                 break;
+            }
 
             case 0xE000: // Keyboard input opcodes in E, range
+            {
                 int  key     = V[(opcode & 0x0F00) >> 8];
                 bool pressed = (Keyboard & (1 << key)) != 0;
                 
@@ -303,20 +351,27 @@ public class CPU
 
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
                 }
+                
                 break;
+            }
+
 
             case 0xF000: // Additional opcodes switching on lowest byte
+            {
                 int tx = (opcode & 0x0F00) >> 8;
                 switch (opcode & 0x00FF)
                 {
                     case 0x07: V[tx] = DelayTimer; break;
-                    case 0x0A: WaitingForKeyPress = true; PC -= 2; break;
+                    case 0x0A:
+                        WaitingForKeyPress = true;
+                        PC -= 2;
+                        break;
                     case 0x15: DelayTimer = V[tx]; break;
                     case 0x18: SoundTimer = V[tx]; break;
                     case 0x1E: I = (ushort)(I + V[tx]); break;
                     case 0x29: I = (ushort)(V[tx] * 5); break;
                     case 0x33:
-                        RAM[I]     = (byte)(V[tx] / 100);
+                        RAM[I] = (byte)(V[tx] / 100);
                         RAM[I + 1] = (byte)(V[tx] % 100 / 10);
                         RAM[I + 2] = (byte)(V[tx] % 10);
                         break;
@@ -331,7 +386,9 @@ public class CPU
                         I += (ushort)(tx + 1);
                         break;
                 }
+
                 break;
+            }
 
             default: throw new Exception($"Unsupported opcode {opcode:x4}");
         }
