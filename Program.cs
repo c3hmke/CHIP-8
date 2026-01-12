@@ -1,4 +1,5 @@
 ﻿// ReSharper disable AccessToDisposedClosure; Disposed after use.
+// ReSharper disable InconsistentNaming; Follows library naming style
 
 using OpenTK;
 using OpenTK.Graphics.OpenGL4;
@@ -23,10 +24,10 @@ public class SDL_GL_BindingsContext : IBindingsContext
 /// </summary>
 public static class Program
 {
-    private const int menuH    = 20;
-    private const int screenW  = 64;
-    private const int screenH  = 32;
-    private const int scale    = 16;
+    private const int MenuH    = 20;
+    private const int ScreenW  = 64;
+    private const int ScreenH  = 32;
+    private const int Scale    = 16;
     
     private static void Main(string[] args)
     {
@@ -64,8 +65,8 @@ public static class Program
         nint window = SDL_CreateWindow(
             "CHIP-8", 
             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-            (screenW * scale),
-            (screenH * scale) + menuH,
+            (ScreenW * Scale),
+            (ScreenH * Scale) + MenuH,
             SDL_WindowFlags.SDL_WINDOW_OPENGL);
 
         if (window == 0)
@@ -81,14 +82,14 @@ public static class Program
         SDL_GL_SetSwapInterval(1);                  // VSync
 
         GL.LoadBindings(new SDL_GL_BindingsContext());
-        GL.Viewport(0, 0, screenW * scale, screenH * scale);
+        GL.Viewport(0, 0, ScreenW * Scale, ScreenH * Scale);
         GL.ClearColor(1f, 0f, 0f, 1f);
         
         // --------------------------------------------------------------------
         //      VM Components
         // --------------------------------------------------------------------
         CPU              cpu      = new();
-        PhosphorRenderer renderer = new(screenW, screenH, scale);
+        PhosphorRenderer renderer = new(ScreenW, ScreenH, Scale);
         AudioEngine      _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
         InputHandler     input    = new(
             () => cpu.WaitingForKeyPress,
