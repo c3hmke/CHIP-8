@@ -142,6 +142,16 @@ public class CPU
     {
         RAM = new byte[4096];   // Clear memory
         PC = 512;               // Set PC to start location
+        I = 0;                  // Reset the address register location
+        Array.Clear(V);         // Clear the registers
+        Stack.Clear();          // Empty out the stack
+        
+        // Clear out any other timers, accumulators, & flags
+        DelayTimer = SoundTimer = 0;
+        _timerAccumulator = 0;
+        Keyboard = 0;
+        WaitingForKeyPress = false;
+        
         InitFont();             // Load the built-in font into memory
         ClearDisplay();         // Clear the display
     }
@@ -151,6 +161,8 @@ public class CPU
     {
         // Handle the system clock timers
         UpdateTimers();
+
+        if (WaitingForKeyPress) return;
         
         // Get the opcode
         var opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
