@@ -133,8 +133,10 @@ public class CPU
     public void KeyPressed(byte key)
     {
         WaitingForKeyPress = false;
-        
+
+        key &= 0x0F; // Limits keys to valid values
         var opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
+        
         V[(opcode & 0x0F00) >> 8] = key;
         PC += 2;
     }
