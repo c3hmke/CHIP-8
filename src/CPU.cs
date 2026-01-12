@@ -1,3 +1,5 @@
+// ReSharper disable InconsistentNaming; Naming consistent with spec instead of C# rules.
+
 using System.Diagnostics;
 
 namespace CHIP_8;
@@ -103,20 +105,20 @@ public class CPU
     
     private byte DelayTimer;                             // DelayTimer used for timed events
     public  byte SoundTimer;                             // SoundTimer used for beep
+    private long _timerAccumulator;                      // Accumulator used to keep timers in syn
     
     public  ushort Keyboard;                             // Use the lower4 bits for 16 keys
     public  readonly uint[] Display = new uint[64 * 32]; // 64x32 display
     
     /// Clock used for functionality of timers
     private readonly Stopwatch _clock = new();
-    private long _timerAccumulator = 0;
-    private long _timerFrequency   = (Stopwatch.Frequency / 60);
+    private readonly long _timerFrequency = (Stopwatch.Frequency / 60);
 
     /// Random number generator used to randomize some events
     private readonly Random _rng = new (Environment.TickCount);
     
     /// Keyboard interaction operations
-    public bool WaitingForKeyPress = false;
+    public bool WaitingForKeyPress;
     public void KeyPressed(byte key)
     {
         WaitingForKeyPress = false;
@@ -162,14 +164,13 @@ public class CPU
         // Handle the system clock timers
         UpdateTimers();
 
+        // Simply return if blocked for input
         if (WaitingForKeyPress) return;
         
-        // Get the opcode
+        // Get the opcode, increment the PC and execute
         var opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
-        
-        // Increment the ProgramCounter and execute the opcode
         PC += 2;
-        switch ((ushort)(opcode & 0xF000))  // then execute the opcode
+        switch ((ushort)(opcode & 0xF000))
         {
             case 0x0000:
                 switch (opcode)
