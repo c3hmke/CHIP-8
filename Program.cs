@@ -1,6 +1,7 @@
 ﻿// ReSharper disable AccessToDisposedClosure; Disposed after use.
 // ReSharper disable InconsistentNaming; Follows library naming style
 
+using CHIP_8.Drivers;
 using CHIP_8.Emulation;
 using OpenTK;
 using OpenTK.Graphics.OpenGL4;
@@ -92,14 +93,9 @@ public static class Program
         // --------------------------------------------------------------------
         CHIP8            machine  = new ();
         PhosphorRenderer renderer = new (ScreenW, ScreenH, Scale);
-        AudioDriver      audio    = new (
-                                        () => machine.SoundTimer,
-                                        v => machine.SoundTimer = v);
-        InputDriver     input = new(
-                                        () => machine.AwaitingInput,
-                                        k  => machine.Input(k),
-                                        () => machine.Keyboard,
-                                        v  => machine.Keyboard = v);
+        AudioDriver      audio    = new (() => machine.SoundTimer,
+                                         v => machine.SoundTimer = v);
+        InputDriver      input    = new (machine);
         
         // Load initial ROM
         machine.Reset();
@@ -145,7 +141,7 @@ public static class Program
                     }
                     
                     case SDL_EventType.SDL_KEYDOWN: case SDL_EventType.SDL_KEYUP:
-                        input.HandleKeypress(e);
+                        input.HandleEvent(e);
                         break;
                 }
             }

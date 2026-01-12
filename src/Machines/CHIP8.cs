@@ -134,17 +134,20 @@ public class CHIP8 : IVirtualMachine
     }
     
     /// <summary>
-    /// Places the pressed key in the Input register if the machine is awaiting input.
+    /// Sets all the counters and registers back to their starting values.
     /// </summary>
-    public void Input(byte key)
+    public void Reset()
     {
-        if (!AwaitingInput) return; // If not blocking just ignore
+        RAM = new byte[MEMORY_SIZE];   // Clear memory
+        Array.Clear(V);                // Clear the registers
+        I   = 0;                       // Reset the address register location
+        PC  = PC_START_LOC;            // Set PC to start location
+        DelayTimer = SoundTimer = 0;   // Clear timer values
         
-        AwaitingInput = false;      // No longer blocking for input
-        key &= 0x0F;                // Guards against invalid input
+        Array.Clear(Stack);            // Empty out the stack
+        _stackPointer = 0;             // Reset the stack pointer location
         
-        V[_waitingTargetReg] = key; // Set the input key in the register
-        PC += 2;                    // Then increment the Program Counter
+        ClearDisplay(); InitFont();    // Clear the Display & Load the font
     }
 
     /// <summary>
@@ -404,20 +407,30 @@ public class CHIP8 : IVirtualMachine
     }
     
     /// <summary>
-    /// Sets all the counters and registers back to their starting values.
+    /// Handles a key press event
     /// </summary>
-    public void Reset()
+    public void KeyDown(byte key)
     {
-        RAM = new byte[MEMORY_SIZE];   // Clear memory
-        Array.Clear(V);                // Clear the registers
-        I   = 0;                       // Reset the address register location
-        PC  = PC_START_LOC;            // Set PC to start location
-        DelayTimer = SoundTimer = 0;   // Clear timer values
-        
-        Array.Clear(Stack);            // Empty out the stack
-        _stackPointer = 0;             // Reset the stack pointer location
-        
-        ClearDisplay(); InitFont();    // Clear the Display & Load the font
+        // Register the key pressed
+        key &= 0x0F;
+        Keyboard |= (ushort)(1 << key);
+
+        // Then process it if awaiting input
+        if (AwaitingInput)
+        {
+            AwaitingInput = false;      // No longer blocking for input
+            V[_waitingTargetReg] = key; // Set the input key in the register
+            PC += 2;                    // Then increment the Program Counter
+        }
+    }
+
+    /// <summary>
+    /// Handles a key release event
+    /// </summary>
+    public void KeyUp(byte key)
+    {
+        key &= 0x0F;
+        Keyboard &= (ushort)~(1 << key);
     }
     
     /// <summary>

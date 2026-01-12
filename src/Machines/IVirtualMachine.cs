@@ -2,9 +2,12 @@ namespace CHIP_8.Machines;
 
 public interface IVirtualMachine
 {
-    public void LoadProgram(byte[] program);
-    public void Input(byte key);
-    public void StepInstruction();
-    public void TickTimers();
-    public void Reset();
+    void LoadProgram(byte[] program);
+    void Reset();
+    
+    void StepInstruction();
+    void TickTimers();
+    
+    void KeyDown(byte key);
+    void KeyUp(byte key);
 }
