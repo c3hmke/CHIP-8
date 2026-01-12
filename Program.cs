@@ -109,18 +109,49 @@ public static class Program
         // --------------------------------------------------------------------
         //      Main program loop
         // --------------------------------------------------------------------
-        while (input.Running)
+        bool running = true;
+        while (true)
         {
-            clock.Tick();      // CPU steps and renderer.Render(cpu.Display)
-            input.PollEvent(); // Handle SDL events for input handler
-        }
+            // Run the emulation in running state
+            if (running) clock.Tick();
+            
+            while (SDL_PollEvent(out SDL_Event e) != 0)
+            {
+                switch (e.type)
+                {
+                    case SDL_EventType.SDL_QUIT: goto Quit;
 
+                    case SDL_EventType.SDL_WINDOWEVENT:
+                    {
+                        running = e.window.windowEvent switch
+                        {
+                            SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST   => false,
+                            SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED => true,
+                            _ => running
+                        };
+                        break;
+                    }
+                    
+                    case SDL_EventType.SDL_KEYDOWN:
+                    case SDL_EventType.SDL_KEYUP:
+                        input.HandleKeypress(e);
+                        break;
+                    
+                    default: break;
+                }
+            }
+        }
+        
         // --------------------------------------------------------------------
         //      Cleanup
         // --------------------------------------------------------------------
-        renderer.Dispose();
-        SDL_GL_DeleteContext(glContext);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
+        Quit:
+        {
+            renderer.Dispose();
+            SDL_GL_DeleteContext(glContext);
+            SDL_DestroyWindow(window);
+            SDL_Quit();
+        }
+        
     }
 }
