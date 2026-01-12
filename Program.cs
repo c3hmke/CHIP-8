@@ -133,6 +133,7 @@ public static class Program
                             {
                                 clock.Resume();
                                 cpu.Resume();
+                                renderer.Reset();
                                 break;
                             }
                         }

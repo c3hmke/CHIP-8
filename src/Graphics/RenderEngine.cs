@@ -214,6 +214,15 @@ public class RenderEngine : IDisposable
     }
 
     /// <summary>
+    /// Clear all display buffers
+    /// </summary>
+    public void Reset()
+    {
+        Array.Clear(_drawBuffer);
+        Array.Clear(_decayBuffer);
+    }
+
+    /// <summary>
     /// Method used to clean up this object correctly. (Used by GC)
     /// </summary>
     public void Dispose()
