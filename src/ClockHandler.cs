@@ -8,16 +8,44 @@ namespace CHIP_8;
 /// </summary>
 public class ClockHandler (Action cpuStep, Action frameStep, int cpuHz = 700, int frameHz = 60)
 {
-    /// Used to keep display & CPU clocks synced
-    private long _accumulator;
+    /// Keeps track of whether the clock handler should be running or not.
+    private bool _paused = false;
     
     /// Configure the CPU clock, used for executing opcodes
     private readonly Stopwatch _cpuTimer = Stopwatch.StartNew();        // Timer for the CPU clock
     private readonly long      _cpuTicks = Stopwatch.Frequency / cpuHz; // Frequency for CPU clock, derived from _cpuHz
+    private long               _cpuAccumulator;
     
     /// Configure the Frame clock, used for display
     private readonly Stopwatch _frameTimer = Stopwatch.StartNew();          // Timer for display out
     private readonly long      _frameTicks = Stopwatch.Frequency / frameHz; // Frequency for CPU clock, derived from _frameHz
+    private long               _frameAccumulator;
+
+
+    /// Pause the Timers
+    public void Pause()
+    {
+        _paused = true;
+    }
+
+    /// Resume the Timers
+    public void Resume()
+    {
+        // This prevents the timers from being reset when calling this method while
+        // the timers are already running.
+        if (!_paused) return;
+        
+        _paused = false;
+        Reset();
+    }
+
+    /// Reset all the timers
+    public void Reset()
+    {
+        _cpuAccumulator = _frameAccumulator = 0;
+        _cpuTimer.Restart();
+        _frameTimer.Restart();
+    }
     
     /// <summary>
     /// Tick over the system clocks. This will step on both CPU and Frame and execute
@@ -25,6 +53,8 @@ public class ClockHandler (Action cpuStep, Action frameStep, int cpuHz = 700, in
     /// </summary>
     public void Tick()
     {
+        if (_paused) return;
+        
         StepCPU();
         StepFrame();
     }
@@ -35,10 +65,15 @@ public class ClockHandler (Action cpuStep, Action frameStep, int cpuHz = 700, in
     /// </summary>
     private void StepCPU()
     {
-        if (_cpuTimer.ElapsedTicks >= _cpuTicks)
+        long elapsed = _cpuTimer.ElapsedTicks;
+        _cpuTimer.Restart();
+        
+        _cpuAccumulator += elapsed;
+        
+        while (_cpuAccumulator >= _cpuTicks)
         {
             cpuStep();
-            _cpuTimer.Restart();
+            _cpuAccumulator -= _cpuTicks;
         }
     }
 
@@ -51,12 +86,12 @@ public class ClockHandler (Action cpuStep, Action frameStep, int cpuHz = 700, in
         long elapsed = _frameTimer.ElapsedTicks;
         _frameTimer.Restart();
         
-        _accumulator += elapsed;
+        _frameAccumulator += elapsed;
         
-        while (_accumulator >= _frameTicks)
+        while (_frameAccumulator >= _frameTicks)
         {
             frameStep();
-            _accumulator -= _frameTicks;
+            _frameAccumulator -= _frameTicks;
         }
     }
 }

@@ -125,11 +125,13 @@ public static class Program
                         {
                             case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
                             {
+                                clock.Pause();
                                 cpu.Pause();
                                 break;
                             }
                             case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
                             {
+                                clock.Resume();
                                 cpu.Resume();
                                 break;
                             }
