@@ -130,14 +130,16 @@ public class CPU
     
     /// Keyboard interaction operations
     public bool WaitingForKeyPress;
+    private int _waitingKeyTargetReg;
     public void KeyPressed(byte key)
     {
-        WaitingForKeyPress = false;
-
-        key &= 0x0F; // Limits keys to valid values
-        var opcode = (ushort)(RAM[PC] << 8 | RAM[PC + 1]);
+        if (!WaitingForKeyPress) 
+            return;
         
-        V[(opcode & 0x0F00) >> 8] = key;
+        WaitingForKeyPress = false;
+        key &= 0x0F; // guard against invalid inputs
+        
+        V[_waitingKeyTargetReg] = key;
         PC += 2;
     }
     
@@ -167,6 +169,7 @@ public class CPU
         _timerAccumulator = 0;
         Keyboard = 0;
         WaitingForKeyPress = false;
+        _waitingKeyTargetReg = 0;
         
         InitFont();             // Load the built-in font into memory
         ClearDisplay();         // Clear the display
@@ -381,8 +384,9 @@ public class CPU
                     case 0x07: V[tx] = DelayTimer; break;
                     
                     case 0x0A:
-                        WaitingForKeyPress = true;
-                        PC -= 2;
+                        WaitingForKeyPress   = true;
+                        _waitingKeyTargetReg = tx;
+                        PC -= 2; // Resets the PC so program keeps blocking.
                         break;
                     
                     case 0x15: DelayTimer = V[tx]; break;
