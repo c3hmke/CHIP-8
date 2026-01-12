@@ -134,6 +134,10 @@ public static class Program
                                 clock.Resume();
                                 cpu.Resume();
                                 renderer.Reset();
+
+                                GL.Clear(ClearBufferMask.ColorBufferBit);
+                                SDL_GL_SwapWindow(window);
+
                                 break;
                             }
                         }
