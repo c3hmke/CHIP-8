@@ -96,19 +96,24 @@ namespace CHIP_8;
 /// </summary>
 public class CPU
 {
+    /// Some constants to define program behaviour
+    private const int STACK_SIZE = 12;
+    
     /// Define the properties of the VirtualMachine so that it can be correctly simulated.
-    private byte[]          RAM = new byte[4096];        // 4Kb Memory
-    private readonly byte[] V   = new byte[16];          // Registers [V0 -> VF]
-    private ushort          I   = 0;                     // Address register with 16-bits
-    private ushort          PC  = 0;                     // Program Counter
-    private readonly Stack<ushort> Stack = new();        // Stack (currently 'unlimited')
+    private byte[]          RAM = new byte[4096];               // 4Kb Memory
+    private readonly byte[] V   = new byte[16];                 // Registers [V0 -> VF]
+    private ushort          I   = 0;                            // Address register with 16-bits
+    private ushort          PC  = 0;                            // Program Counter
     
-    private byte DelayTimer;                             // DelayTimer used for timed events
-    public  byte SoundTimer;                             // SoundTimer used for beep
-    private long _timerAccumulator;                      // Accumulator used to keep timers in syn
+    private readonly ushort[] Stack = new ushort[STACK_SIZE];   // Stack (limited to depth of 12)
+    private int _stackPointer = 0;                              // Index for top of stack
     
-    public  ushort Keyboard;                             // Use the lower4 bits for 16 keys
-    public  readonly uint[] Display = new uint[64 * 32]; // 64x32 display
+    private byte DelayTimer;                                    // DelayTimer used for timed events
+    public  byte SoundTimer;                                    // SoundTimer used for beep
+    private long _timerAccumulator;                             // Accumulator used to keep timers in syn
+    
+    public  ushort Keyboard;                                    // Use the lower4 bits for 16 keys
+    public  readonly uint[] Display = new uint[64 * 32];        // 64x32 display
     
     /// Clock used for functionality of timers
     private readonly Stopwatch _clock = new();
@@ -146,7 +151,8 @@ public class CPU
         PC = 512;               // Set PC to start location
         I = 0;                  // Reset the address register location
         Array.Clear(V);         // Clear the registers
-        Stack.Clear();          // Empty out the stack
+        Array.Clear(Stack);     // Empty out the stack
+        _stackPointer = 0;      // Reset the stack pointer location
         
         // Clear out any other timers, accumulators, & flags
         DelayTimer = SoundTimer = 0;
@@ -175,8 +181,14 @@ public class CPU
             case 0x0000:
                 switch (opcode)
                 {
-                    case 0x00E0: ClearDisplay(); break;
-                    case 0x00EE: PC = Stack.Pop(); break;
+                    case 0x00E0:
+                        ClearDisplay();
+                        break;
+                    case 0x00EE:
+                        if (_stackPointer == 0)
+                            throw new InvalidOperationException("Stack underflow");
+                        PC = Stack[--_stackPointer];
+                        break;
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
                 }
                 break;
@@ -184,7 +196,9 @@ public class CPU
                 PC = (ushort)(opcode & 0x0FFF);
                 break;
             case 0x2000: // ( 2NNN )
-                Stack.Push(PC);
+                if (_stackPointer >= STACK_SIZE)
+                    throw new InvalidOperationException("Stack overflow");
+                Stack[_stackPointer++] = PC;
                 PC = (ushort)(opcode & 0x0FFF);
                 break;
             case 0x3000: // ( 3XNN )
