@@ -122,6 +122,18 @@ public class CHIP8 : IVirtualMachine
     
     
     /// <summary>
+    /// Load the given program into memory so that it can be executed.
+    /// </summary>
+    public void LoadProgram(byte[] program)
+    {
+        Reset();
+
+        // Load in the program passed to this function
+        for (int i = 0; i < program.Length; i++)
+            RAM[PC_START_LOC + i] = program[i];
+    }
+    
+    /// <summary>
     /// Places the pressed key in the Input register if the machine is awaiting input.
     /// </summary>
     public void Input(byte key)
@@ -404,6 +416,8 @@ public class CHIP8 : IVirtualMachine
         
         Array.Clear(Stack);            // Empty out the stack
         _stackPointer = 0;             // Reset the stack pointer location
+        
+        ClearDisplay(); InitFont();    // Clear the Display & Load the font
     }
     
     /// <summary>

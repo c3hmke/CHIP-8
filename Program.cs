@@ -1,9 +1,11 @@
 ﻿// ReSharper disable AccessToDisposedClosure; Disposed after use.
 // ReSharper disable InconsistentNaming; Follows library naming style
 
+using CHIP_8.Emulation;
 using OpenTK;
 using OpenTK.Graphics.OpenGL4;
 using CHIP_8.Graphics;
+using CHIP_8.Machines;
 using static SDL2.SDL;
 
 namespace CHIP_8;
@@ -88,31 +90,34 @@ public static class Program
         // --------------------------------------------------------------------
         //      VM Components
         // --------------------------------------------------------------------
-        CPU              cpu      = new();
-        PhosphorRenderer renderer = new(ScreenW, ScreenH, Scale);
-        AudioEngine      _        = new(() => cpu.SoundTimer, v => cpu.SoundTimer = v);
-        InputHandler     input    = new(
-            () => cpu.WaitingForKeyPress,
-            k  => cpu.KeyPressed(k),
-            () => cpu.Keyboard,
-            v  => cpu.Keyboard = v);
+        CHIP8            machine  = new ();
+        PhosphorRenderer renderer = new (ScreenW, ScreenH, Scale);
+        AudioEngine      audio    = new (
+                                        () => machine.SoundTimer,
+                                        v => machine.SoundTimer = v);
+        InputHandler     io = new(
+                                        () => machine.AwaitingInput,
+                                        k  => machine.Input(k),
+                                        () => machine.Keyboard,
+                                        v  => machine.Keyboard = v);
         
-        // Load initial ROM into program memory (first in list by default)
-        cpu.LoadProgram(File.ReadAllBytes(ROMs[currentROM]));
-        
-        // ClockHandler handles syncing and execution of the Display & CPU
-        ClockHandler clock = new(cpu.Step, () =>
+        // Load initial ROM
+        machine.Reset();
+        machine.LoadProgram(File.ReadAllBytes(ROMs[currentROM]));
+
+        Emulator emulator = new (machine);
+        emulator.OnFrame += () =>
         {
-            renderer.Render(cpu.Display);   // Render CHIP-8 framebuffer
-            SDL_GL_SwapWindow(window);      // Present the frame
-        });
+            renderer.Render(machine.Display);
+            SDL_GL_SwapWindow(window);
+        };
         
         // --------------------------------------------------------------------
         //      Main program loop
         // --------------------------------------------------------------------
         while (true)
         {
-            clock.Tick();
+            emulator.Update();
             
             while (SDL_PollEvent(out SDL_Event e) != 0)
             {
@@ -125,29 +130,22 @@ public static class Program
                         switch (e.window.windowEvent)
                         {
                             case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
-                            {
-                                clock.Pause();
-                                cpu.Pause();
+                                emulator.Pause();
                                 break;
-                            }
+
                             case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
-                            {
-                                clock.Resume();
-                                cpu.Resume();
+                                emulator.Resume();
                                 renderer.Reset();
 
                                 GL.Clear(ClearBufferMask.ColorBufferBit);
                                 SDL_GL_SwapWindow(window);
-
                                 break;
-                            }
                         }
-
                         break;
                     }
                     
                     case SDL_EventType.SDL_KEYDOWN: case SDL_EventType.SDL_KEYUP:
-                        input.HandleKeypress(e);
+                        io.HandleKeypress(e);
                         break;
                 }
             }
