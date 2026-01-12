@@ -260,29 +260,38 @@ public class CPU
                 switch (opcode & 0x000F)
                 {
                     case 0: V[vx] = V[vy]; break;
+                    
                     case 1: V[vx] = (byte)(V[vx] | V[vy]); break;
+                    
                     case 2: V[vx] = (byte)(V[vx] & V[vy]); break;
+                    
                     case 3: V[vx] = (byte)(V[vx] ^ V[vy]); break;
+                    
                     case 4:
                         V[15] = (byte)(V[vx] + V[vy] > 255 ? 1 : 0);
                         V[vx] = (byte)((V[vx] + V[vy]) & 0x00FF);
                         break;
+                    
                     case 5:
                         V[15] = (byte)(V[vx] >= V[vy] ? 1 : 0);
                         V[vx] = (byte)((V[vx] - V[vy]) & 0x00FF);
                         break;
+                    
                     case 6:
                         V[15] = (byte)(V[vy] & 0x0001);
                         V[vx] = (byte)(V[vy] >> 1);
                         break;
+                    
                     case 7:
                         V[15] = (byte)(V[vy] >= V[vx] ? 1 : 0);
                         V[vx] = (byte)((V[vy] - V[vx]) & 0x00FF);
                         break;
+                    
                     case 14:
                         V[15] = (byte)((V[vy] & 0x80) == 0x80 ? 1 : 0);
                         V[vx] = (byte)(V[vy] << 1);
                         break;
+                    
                     default: throw new Exception($"Unsupported opcode {opcode:x4}");
 
                 }
@@ -310,7 +319,7 @@ public class CPU
 
             case 0xC000: // ( CXNN )
             {
-                V[(opcode & 0x0F00) >> 8] = (byte)(_rng.Next() & (opcode & 0x00FF));
+                V[(opcode & 0x0F00) >> 8] = (byte)(_rng.Next(256) & (opcode & 0x00FF));
                 break;
             }
 
@@ -368,24 +377,32 @@ public class CPU
                 switch (opcode & 0x00FF)
                 {
                     case 0x07: V[tx] = DelayTimer; break;
+                    
                     case 0x0A:
                         WaitingForKeyPress = true;
                         PC -= 2;
                         break;
+                    
                     case 0x15: DelayTimer = V[tx]; break;
+                    
                     case 0x18: SoundTimer = V[tx]; break;
+                    
                     case 0x1E: I = (ushort)(I + V[tx]); break;
+                    
                     case 0x29: I = (ushort)(V[tx] * 5); break;
+                    
                     case 0x33:
                         RAM[I] = (byte)(V[tx] / 100);
                         RAM[I + 1] = (byte)(V[tx] % 100 / 10);
                         RAM[I + 2] = (byte)(V[tx] % 10);
                         break;
+                    
                     case 0x55:
                         for (int i = 0; i <= tx; i++)
                             RAM[I + i] = V[i];
                         I += (ushort)(tx + 1);
                         break;
+                    
                     case 0x65:
                         for (int i = 0; i <= tx; i++)
                             V[i] = RAM[I + i];
