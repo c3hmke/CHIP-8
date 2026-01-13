@@ -1,6 +1,7 @@
 ﻿// ReSharper disable AccessToDisposedClosure; Disposed after use.
 // ReSharper disable InconsistentNaming; Follows library naming style
 
+using System.Diagnostics.CodeAnalysis;
 using CHIP_8.Drivers;
 using CHIP_8.Emulation;
 using OpenTK;
@@ -34,9 +35,9 @@ public static class Program
     
     private static void Main(string[] args)
     {
-        /// --------------------------------------------------------------------
-        ///     ROM Discovery
-        /// --------------------------------------------------------------------
+        // --------------------------------------------------------------------
+        //     ROM Discovery
+        // --------------------------------------------------------------------
         string ROMDir = Path.Combine(AppContext.BaseDirectory, "ROMs");
         string[] ROMs = Directory.GetFiles(ROMDir)
                                  .OrderBy(Path.GetFileNameWithoutExtension)
