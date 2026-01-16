@@ -3,7 +3,7 @@ using static SDL2.SDL;
 
 namespace CHIP_8.Drivers;
 
-public class InputDriver (IVirtualMachine machine)
+public class InputDriver (IVirtualMachine vm)
 {
     /// <summary>
     /// Captures SDL input events then correctly passes them through to the Virtual Machine
@@ -15,10 +15,10 @@ public class InputDriver (IVirtualMachine machine)
         if (key is < 0 or > 0xF) return;
         
         if (e.type == SDL_EventType.SDL_KEYDOWN)
-            machine.KeyDown((byte)key);
+            vm.KeyDown((byte)key);
         
         if (e.type == SDL_EventType.SDL_KEYUP)
-            machine.KeyUp((byte)key);
+            vm.KeyUp((byte)key);
         
     }
     
