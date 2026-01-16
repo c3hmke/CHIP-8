@@ -94,8 +94,7 @@ public static class Program
         // --------------------------------------------------------------------
         CHIP8            machine  = new ();
         PhosphorRenderer renderer = new (ScreenW, ScreenH, Scale);
-        AudioDriver      audio    = new (() => machine.SoundTimer,
-                                         v => machine.SoundTimer = v);
+        AudioDriver      audio    = new (machine);
         InputDriver      input    = new (machine);
         
         // Load initial ROM

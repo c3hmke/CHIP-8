@@ -434,6 +434,11 @@ public class CHIP8 : IVirtualMachine
     }
     
     /// <summary>
+    /// Exposes whether the SoundTimer is currently active
+    /// </summary>
+    public bool IsAudioActive => SoundTimer > 0;
+    
+    /// <summary>
     /// Clears out the Display buffer.
     /// </summary>
     private void ClearDisplay()

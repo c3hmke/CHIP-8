@@ -1,43 +1,34 @@
 using System.Runtime.InteropServices;
+using CHIP_8.Machines;
 using static SDL2.SDL;
 
-namespace CHIP_8;
+namespace CHIP_8.Drivers;
 
 public sealed class AudioDriver
 {
+    private int _sample;
     
-    private int _sample, _beeps;
-    
-    private readonly Func<byte>   _getSoundTimer;
-    private readonly Action<byte> _setSoundTimer;
-
-    /// This needs to be stored to prevent it from being garbage collected
+    // This is assigned here to prevent it from being garbage collected.
+    // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
     private readonly SDL_AudioCallback _callback;
-
-    public AudioDriver(Func<byte> getSoundTimer, Action<byte> setSoundTimer)
+    
+    public AudioDriver(IVirtualMachine vm)
     {
-        _getSoundTimer = getSoundTimer;
-        _setSoundTimer = setSoundTimer;
-
         _callback = (_, stream, length) =>
         {
-            var data = new sbyte[length];
-            byte timer = _getSoundTimer();
+            var buffer = new sbyte[length];
 
-            for (int i = 0; i < data.Length && timer > 0; i++, _beeps++)
+            if (vm.IsAudioActive)
             {
-                if (_beeps == 730)
+                for (int i = 0; i < buffer.Length; i++)
                 {
-                    _beeps = 0;
-                    setSoundTimer((byte)(timer - 1));
-                    timer = _getSoundTimer();
+                    buffer[i] = (sbyte)(127 * Math.Sin(_sample * Math.PI * 2 * 604.1 / 44100)); // sin waveform
+                    _sample++;
                 }
-
-                data[i] = (sbyte)(127 * Math.Sin(_sample * Math.PI * 2 * 604.1 / 44100));
-                _sample++;
             }
-
-            Marshal.Copy((byte[])(Array)data, 0, stream, data.Length);
+            else { Array.Clear(buffer); }
+            
+            Marshal.Copy((byte[])(Array)buffer, 0, stream, buffer.Length);
         };
         
         SDL_AudioSpec spec = new()

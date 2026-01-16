@@ -10,4 +10,6 @@ public interface IVirtualMachine
     
     void KeyDown(byte key);
     void KeyUp(byte key);
+    
+    bool IsAudioActive { get; }
 }
