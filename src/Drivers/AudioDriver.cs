@@ -18,7 +18,7 @@ public sealed class AudioDriver
         {
             var buffer = new sbyte[length];
 
-            if (vm.IsAudioActive)
+            if (vm.isAudioActive)
             {
                 for (int i = 0; i < buffer.Length; i++)
                 {

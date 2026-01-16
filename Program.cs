@@ -1,7 +1,6 @@
 ﻿// ReSharper disable AccessToDisposedClosure; Disposed after use.
 // ReSharper disable InconsistentNaming; Follows library naming style
 
-using System.Diagnostics.CodeAnalysis;
 using CHIP_8.Drivers;
 using CHIP_8.Emulation;
 using OpenTK;

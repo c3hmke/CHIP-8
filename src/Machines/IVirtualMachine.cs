@@ -2,6 +2,8 @@ namespace CHIP_8.Machines;
 
 public interface IVirtualMachine
 {
+    bool isAudioActive { get; }
+
     void LoadProgram(byte[] program);
     void Reset();
     
@@ -10,6 +12,4 @@ public interface IVirtualMachine
     
     void KeyDown(byte key);
     void KeyUp(byte key);
-    
-    bool IsAudioActive { get; }
 }

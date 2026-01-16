@@ -100,6 +100,11 @@ public class CHIP8 : IVirtualMachine
     private const int DISPLAY_WIDTH   = 64;         // Pixel-width of the display
     private const int DISPLAY_HEIGHT  = 32;         // Pixel-height of the display
     
+    /// <summary>
+    /// Exposes whether the SoundTimer is currently active
+    /// </summary>
+    public bool isAudioActive => SoundTimer > 0;
+    
     /// === Virtual Machine Properties ===
     public byte[] RAM = new byte[MEMORY_SIZE];      // 4Kb Memory
     public byte[] V   = new byte[NUM_REGISTERS];    // Registers [V0 -> VF]
@@ -432,11 +437,6 @@ public class CHIP8 : IVirtualMachine
         key &= 0x0F;
         Keyboard &= (ushort)~(1 << key);
     }
-    
-    /// <summary>
-    /// Exposes whether the SoundTimer is currently active
-    /// </summary>
-    public bool IsAudioActive => SoundTimer > 0;
     
     /// <summary>
     /// Clears out the Display buffer.
