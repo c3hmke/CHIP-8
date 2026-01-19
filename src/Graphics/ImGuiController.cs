@@ -169,7 +169,7 @@ public class ImGuiController : IDisposable
 
     private void CreateDeviceObjects()
     {
-        _shader = CreateShaderProgram();
+        _shader = GLProgram.Create(VertexShaderSrc, FragmentShaderSrc);
         GL.UseProgram(_shader);
 
         _uProjMatrixLocation = GL.GetUniformLocation(_shader, "uProjection");
@@ -204,77 +204,6 @@ public class ImGuiController : IDisposable
         GL.BindVertexArray(0);
 
         CreateFontTexture();
-    }
-
-    private int CreateShaderProgram()
-    {
-        int vertexShader = GL.CreateShader(ShaderType.VertexShader);
-        const string vertexShaderSrc = """
-
-                          #version 330 core
-                          layout (location = 0) in vec2 in_position;
-                          layout (location = 1) in vec2 in_texCoord;
-                          layout (location = 2) in vec4 in_color;
-
-                          uniform mat4 uProjection;
-
-                          out vec2 frag_uv;
-                          out vec4 frag_color;
-
-                          void main()
-                          {
-                              frag_uv = in_texCoord;
-                              frag_color = in_color;
-                              gl_Position = uProjection * vec4(in_position, 0.0, 1.0);
-                          }
-                          """;
-        GL.ShaderSource(vertexShader, vertexShaderSrc);
-        GL.CompileShader(vertexShader);
-        CheckShader(vertexShader);
-
-        int fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-        const string fragmentShaderSrc = """
-
-                          #version 330 core
-                          in vec2 frag_uv;
-                          in vec4 frag_color;
-
-                          uniform sampler2D uTexture;
-
-                          out vec4 out_color;
-
-                          void main()
-                          {
-                              out_color = frag_color * texture(uTexture, frag_uv);
-                          }
-                          """;
-
-        GL.ShaderSource(fragmentShader, fragmentShaderSrc);
-        GL.CompileShader(fragmentShader);
-        CheckShader(fragmentShader);
-
-        int program = GL.CreateProgram();
-        GL.AttachShader(program, vertexShader);
-        GL.AttachShader(program, fragmentShader);
-        GL.LinkProgram(program);
-        GL.GetProgram(program, GetProgramParameterName.LinkStatus, out int status);
-        
-        if (status == 0)
-            throw new Exception("Program link error: " + GL.GetProgramInfoLog(program));
-
-        GL.DetachShader(program, vertexShader);
-        GL.DetachShader(program, fragmentShader);
-        GL.DeleteShader(vertexShader);
-        GL.DeleteShader(fragmentShader);
-
-        return program;
-    }
-
-    private void CheckShader(int shader)
-    {
-        GL.GetShader(shader, ShaderParameter.CompileStatus, out int status);
-        if (status == 0)
-            throw new Exception("Shader compile error: " + GL.GetShaderInfoLog(shader));
     }
 
     private unsafe void CreateFontTexture()
@@ -420,4 +349,42 @@ public class ImGuiController : IDisposable
         GL.DeleteTexture(_fontTexture);
         GL.DeleteProgram(_shader);
     }
+    
+    // ---------- SHADERS ----------
+    
+    private const string FragmentShaderSrc = """
+
+                                             #version 330 core
+                                             in vec2 frag_uv;
+                                             in vec4 frag_color;
+
+                                             uniform sampler2D uTexture;
+
+                                             out vec4 out_color;
+
+                                             void main()
+                                             {
+                                                 out_color = frag_color * texture(uTexture, frag_uv);
+                                             }
+                                             """;
+    
+    private const string VertexShaderSrc = """
+
+                                            #version 330 core
+                                            layout (location = 0) in vec2 in_position;
+                                            layout (location = 1) in vec2 in_texCoord;
+                                            layout (location = 2) in vec4 in_color;
+            
+                                            uniform mat4 uProjection;
+            
+                                            out vec2 frag_uv;
+                                            out vec4 frag_color;
+            
+                                            void main()
+                                            {
+                                                frag_uv = in_texCoord;
+                                                frag_color = in_color;
+                                                gl_Position = uProjection * vec4(in_position, 0.0, 1.0);
+                                            }
+                                            """;
 }

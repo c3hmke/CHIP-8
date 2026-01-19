@@ -81,7 +81,7 @@ public sealed class QuadRenderer : IDisposable
 
     public QuadRenderer()
     {
-        _program = CreateProgram(VertexSrc, FragmentSrc);
+        _program = GLProgram.Create(VertexSrc, FragmentSrc);
 
         _uTexture = GL.GetUniformLocation(_program, "uTexture");
         _uScale   = GL.GetUniformLocation(_program, "uScale");
@@ -162,39 +162,6 @@ public sealed class QuadRenderer : IDisposable
         GL.DeleteBuffer(_ebo);
         GL.DeleteVertexArray(_vao);
         GL.DeleteProgram(_program);
-    }
-
-    private static int CreateProgram(string vs, string fs)
-    {
-        int v = GL.CreateShader(ShaderType.VertexShader);
-        GL.ShaderSource(v, vs);
-        GL.CompileShader(v);
-        CheckShader(v);
-
-        int f = GL.CreateShader(ShaderType.FragmentShader);
-        GL.ShaderSource(f, fs);
-        GL.CompileShader(f);
-        CheckShader(f);
-
-        int p = GL.CreateProgram();
-        GL.AttachShader(p, v);
-        GL.AttachShader(p, f);
-        GL.LinkProgram(p);
-        GL.GetProgram(p, GetProgramParameterName.LinkStatus, out int ok);
-        if (ok == 0) throw new Exception("Shader link error: " + GL.GetProgramInfoLog(p));
-
-        GL.DetachShader(p, v);
-        GL.DetachShader(p, f);
-        GL.DeleteShader(v);
-        GL.DeleteShader(f);
-
-        return p;
-    }
-
-    private static void CheckShader(int s)
-    {
-        GL.GetShader(s, ShaderParameter.CompileStatus, out int ok);
-        if (ok == 0) throw new Exception("Shader compile error: " + GL.GetShaderInfoLog(s));
     }
 
     private const string VertexSrc = """
