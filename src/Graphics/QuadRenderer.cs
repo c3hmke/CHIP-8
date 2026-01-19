@@ -171,7 +171,7 @@ public sealed class QuadRenderer : IDisposable
 
         void main()
         {
-            out_color = texture(uTexture, v_uv);
+            out_color = texture(uTexture, vec2(v_uv.x, 1.0 - v_uv.y));
         }
     """;
 }
