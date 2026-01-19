@@ -100,7 +100,8 @@ public static class Program
         //      VM Components
         // --------------------------------------------------------------------
         CHIP8            machine  = new ();
-        PhosphorRenderer renderer = new (ScreenW, ScreenH, Scale);
+        CHIP8Texture     texture  = new ();
+        QuadRenderer     renderer = new ();
         AudioDriver      audio    = new (machine);
         InputDriver      input    = new (machine);
         
@@ -135,20 +136,20 @@ public static class Program
 
                     case SDL_EventType.SDL_WINDOWEVENT:
                     {
-                        switch (e.window.windowEvent)
-                        {
-                            case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
-                                emulator.Pause();
-                                break;
-
-                            case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
-                                emulator.Resume();
-                                renderer.Reset();
-
-                                GL.Clear(ClearBufferMask.ColorBufferBit);
-                                SDL_GL_SwapWindow(window);
-                                break;
-                        }
+                        // switch (e.window.windowEvent)
+                        // {
+                        //     case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
+                        //         emulator.Pause();
+                        //         break;
+                        //
+                        //     case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
+                        //         emulator.Resume();
+                        //         renderer.Reset();
+                        //
+                        //         GL.Clear(ClearBufferMask.ColorBufferBit);
+                        //         SDL_GL_SwapWindow(window);
+                        //         break;
+                        // }
                         break;
                     }
 
@@ -189,8 +190,12 @@ public static class Program
             
             // ---- Render to Screen ----
             GL.Clear(ClearBufferMask.ColorBufferBit);
-            renderer.Render(machine.Display);
+            
+            texture.Upload(machine.Display);
+            renderer.Draw(texture.TextureId, windowWidth, windowHeight);
+            
             imGui.Render();
+            
             SDL_GL_SwapWindow(window);
         }
         
@@ -200,6 +205,9 @@ public static class Program
         Quit:
         {
             renderer.Dispose();
+            texture.Dispose();
+            imGui.Dispose();
+            
             SDL_GL_DeleteContext(glContext);
             SDL_DestroyWindow(window);
             SDL_Quit();
