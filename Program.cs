@@ -116,7 +116,6 @@ public static class Program
         
         var   stopwatch = System.Diagnostics.Stopwatch.StartNew();
         float lastTime  = 0f;
-        bool  frameDue  = false;
         
         while (true)
         {
@@ -190,10 +189,18 @@ public static class Program
             
             // ---- Render to Screen ----
             GL.Clear(ClearBufferMask.ColorBufferBit);
+
+            // CHIP-8 output (reduced window size)
+            int menuHeight = (int) ImGui.GetFrameHeight();
+            int fbWidth    = windowWidth;
+            int fbHeight   = windowHeight - menuHeight;
+            GL.Viewport(0, 0, fbWidth, fbHeight);
             
             texture.Upload(machine.Display);
-            renderer.Draw(texture.TextureId, windowWidth, windowHeight);
+            renderer.Draw(texture.TextureId, fbWidth, fbHeight);
             
+            // Reset viewport for ImGui
+            GL.Viewport(0, 0, windowWidth, windowHeight);
             imGui.Render();
             
             SDL_GL_SwapWindow(window);
