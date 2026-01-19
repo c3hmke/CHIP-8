@@ -7,6 +7,7 @@ using OpenTK;
 using OpenTK.Graphics.OpenGL4;
 using CHIP_8.Graphics;
 using CHIP_8.Machines;
+using ImGuiNET;
 using static SDL2.SDL;
 
 namespace CHIP_8;
@@ -89,6 +90,13 @@ public static class Program
         GL.ClearColor(1f, 0f, 0f, 1f);
         
         // --------------------------------------------------------------------
+        //      ImGUI
+        // --------------------------------------------------------------------
+        SDL_GetWindowSize(window, out int windowWidth, out int windowHeight);
+        var imGui = new ImGuiController(windowWidth, windowHeight);
+        
+        
+        // --------------------------------------------------------------------
         //      VM Components
         // --------------------------------------------------------------------
         CHIP8            machine  = new ();
@@ -99,23 +107,28 @@ public static class Program
         // Load initial ROM
         machine.Reset();
         machine.LoadProgram(File.ReadAllBytes(ROMs[currentROM]));
-
-        Emulator emulator = new (machine);
-        emulator.OnFrame += () =>
-        {
-            renderer.Render(machine.Display);
-            SDL_GL_SwapWindow(window);
-        };
         
         // --------------------------------------------------------------------
         //      Main program loop
         // --------------------------------------------------------------------
+        Emulator emulator = new (machine);
+        
+        var   stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        float lastTime  = 0f;
+        bool  frameDue  = false;
+        
         while (true)
         {
-            emulator.Update();
+            // ---- Track Time ----
+            float now = (float)stopwatch.Elapsed.TotalSeconds;
+            float delta = now - lastTime;
+            lastTime = now;
             
+            // ---- Process Events ----
             while (SDL_PollEvent(out SDL_Event e) != 0)
             {
+                imGui.ProcessEvent(ref e);
+                
                 switch (e.type)
                 {
                     case SDL_EventType.SDL_QUIT: goto Quit;
@@ -138,12 +151,47 @@ public static class Program
                         }
                         break;
                     }
-                    
-                    case SDL_EventType.SDL_KEYDOWN: case SDL_EventType.SDL_KEYUP:
-                        input.HandleEvent(e);
+
+                    case SDL_EventType.SDL_KEYDOWN:
+                    case SDL_EventType.SDL_KEYUP:
+                    {
+                        // Only pass keyboard input to emulation if not used by ImGui
+                        if (!ImGui.GetIO().WantCaptureKeyboard)
+                            input.HandleEvent(e);
+                        
                         break;
+                    }
+                        
                 }
             }
+            
+            // ---- ImGUI Frame ----
+            SDL_GetWindowSize(window, out windowWidth, out windowHeight);
+            imGui.UpdateFrame(delta, windowWidth, windowHeight);
+            
+            
+            // ---- Draw UI ----
+            if (ImGui.BeginMainMenuBar())
+            {
+                if (ImGui.BeginMenu("Foo"))
+                {
+                    if (ImGui.MenuItem("Bar")) { }
+                    if (ImGui.MenuItem("Baz")) { }
+                    
+                    ImGui.EndMenu();
+                }
+
+                ImGui.EndMainMenuBar();
+            }
+
+            // ---- Update Emulation ----
+            emulator.Update();
+            
+            // ---- Render to Screen ----
+            GL.Clear(ClearBufferMask.ColorBufferBit);
+            renderer.Render(machine.Display);
+            imGui.Render();
+            SDL_GL_SwapWindow(window);
         }
         
         // --------------------------------------------------------------------
