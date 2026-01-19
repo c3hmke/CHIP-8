@@ -2,6 +2,59 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace CHIP_8.Graphics;
 
+public static class FullscreenQuad
+{
+    private static int _vao, _vbo, _ebo;
+    private static bool _inited;
+
+    public static void Init()
+    {
+        if (_inited) return;
+        _inited = true;
+
+        float[] verts =
+        {
+            // pos      // uv
+            -1f, -1f,   0f, 0f,
+            1f, -1f,   1f, 0f,
+            1f,  1f,   1f, 1f,
+            -1f,  1f,   0f, 1f,
+        };
+
+        uint[] idx = { 0, 1, 2, 0, 2, 3 };
+
+        _vao = GL.GenVertexArray();
+        _vbo = GL.GenBuffer();
+        _ebo = GL.GenBuffer();
+
+        GL.BindVertexArray(_vao);
+
+        GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
+        GL.BufferData(BufferTarget.ArrayBuffer, verts.Length * sizeof(float), verts, BufferUsageHint.StaticDraw);
+
+        GL.BindBuffer(BufferTarget.ElementArrayBuffer, _ebo);
+        GL.BufferData(BufferTarget.ElementArrayBuffer, idx.Length * sizeof(uint), idx, BufferUsageHint.StaticDraw);
+
+        int stride = 4 * sizeof(float);
+
+        GL.EnableVertexAttribArray(0);
+        GL.VertexAttribPointer(0, 2, VertexAttribPointerType.Float, false, stride, 0);
+
+        GL.EnableVertexAttribArray(1);
+        GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, stride, 2 * sizeof(float));
+
+        GL.BindVertexArray(0);
+    }
+
+    public static void Draw()
+    {
+        GL.BindVertexArray(_vao);
+        GL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, 0);
+        GL.BindVertexArray(0);
+    }
+}
+
+
 public sealed class QuadRenderer : IDisposable
 {
     private readonly int _vao;

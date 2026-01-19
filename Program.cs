@@ -89,6 +89,8 @@ public static class Program
         GL.Viewport(0, 0, ScreenW * Scale, ScreenH * Scale);
         GL.ClearColor(0f, 0f, 0f, 1f);
         
+        FullscreenQuad.Init();
+        
         // --------------------------------------------------------------------
         //      ImGUI
         // --------------------------------------------------------------------
@@ -99,11 +101,15 @@ public static class Program
         // --------------------------------------------------------------------
         //      VM Components
         // --------------------------------------------------------------------
-        CHIP8            machine  = new ();
-        CHIP8Texture     texture  = new ();
-        QuadRenderer     renderer = new ();
-        AudioDriver      audio    = new (machine);
-        InputDriver      input    = new (machine);
+        CHIP8          machine   = new ();
+        AudioDriver    audio     = new (machine);
+        InputDriver    input     = new (machine);
+        
+        CHIP8Texture   texture   = new ();
+        LCDDecayBuffer lcdBuffer = new (64, 32);
+        LCDDecayPass   lcdPass   = new ();
+        QuadRenderer   renderer  = new ();
+
         
         // Load initial ROM
         machine.Reset();
@@ -197,7 +203,20 @@ public static class Program
             GL.Viewport(0, 0, fbWidth, fbHeight);
             
             texture.Upload(machine.Display);
-            renderer.Draw(texture.TextureId, fbWidth, fbHeight);
+            
+            // LCD simulation pass
+            lcdPass.Execute(
+                texture.TextureId,
+                lcdBuffer.ReadTexture,
+                lcdBuffer.WriteFbo);
+            lcdBuffer.Swap();
+            
+            // Presentation pass
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            renderer.Draw(
+                lcdBuffer.ReadTexture,
+                fbWidth,
+                fbHeight);
             
             // Reset viewport for ImGui
             GL.Viewport(0, 0, windowWidth, windowHeight);
