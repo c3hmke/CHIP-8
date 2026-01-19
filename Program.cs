@@ -87,7 +87,7 @@ public static class Program
 
         GL.LoadBindings(new SDL_GL_BindingsContext());
         GL.Viewport(0, 0, ScreenW * Scale, ScreenH * Scale);
-        GL.ClearColor(1f, 0f, 0f, 1f);
+        GL.ClearColor(0f, 0f, 0f, 1f);
         
         // --------------------------------------------------------------------
         //      ImGUI
