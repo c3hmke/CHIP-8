@@ -99,6 +99,9 @@ public class CHIP8 : IVirtualMachine
     private const int PC_START_LOC    = 512;        // Where instructions begin in RAM
     private const int DISPLAY_WIDTH   = 64;         // Pixel-width of the display
     private const int DISPLAY_HEIGHT  = 32;         // Pixel-height of the display
+
+    private const uint PIXEL_ON  = 0xFFFFFFFF;     // White
+    private const uint PIXEL_OFF = 0xFF000000;     // Black
     
     /// <summary>
     /// Exposes whether the SoundTimer is currently active
@@ -327,11 +330,11 @@ public class CHIP8 : IVirtualMachine
                         int  dy = (y + i) & (DISPLAY_HEIGHT - 1);       // y position on the display (faster than %32)
                         int  di = dx + dy * DISPLAY_WIDTH;              // index on the display grid
 
-                        bool oldPx = Display[di] == 0xFFFFFFFF;         // check the status of the current pixel
+                        bool oldPx = Display[di] == PIXEL_ON;           // check the status of the current pixel
                         bool newPx = !oldPx;                            // XOR : toggle the pixel
 
                         if (oldPx) V[15] = 1;                           // flag that the flip occured
-                        Display[di] = newPx ? 0xFFFFFFFF : 0x000000FF;  // then draw the new pixel to the display
+                        Display[di] = newPx ? PIXEL_ON : PIXEL_OFF;     // then draw the new pixel to the display
                     }
                 }
                 
@@ -444,7 +447,7 @@ public class CHIP8 : IVirtualMachine
     private void ClearDisplay()
     {
         for (int i = 0; i < Display.Length; i++) 
-            Display[i] = 0x000000FF;
+            Display[i] = PIXEL_OFF;
     }
     
     /// <summary>
