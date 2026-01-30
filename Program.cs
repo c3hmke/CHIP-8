@@ -122,6 +122,8 @@ public static class Program
         
         var   stopwatch = System.Diagnostics.Stopwatch.StartNew();
         float lastTime  = 0f;
+
+        bool shouldPause = false;
         
         while (true)
         {
@@ -141,20 +143,16 @@ public static class Program
 
                     case SDL_EventType.SDL_WINDOWEVENT:
                     {
-                        // switch (e.window.windowEvent)
-                        // {
-                        //     case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
-                        //         emulator.Pause();
-                        //         break;
-                        //
-                        //     case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
-                        //         emulator.Resume();
-                        //         renderer.Reset();
-                        //
-                        //         GL.Clear(ClearBufferMask.ColorBufferBit);
-                        //         SDL_GL_SwapWindow(window);
-                        //         break;
-                        // }
+                        switch (e.window.windowEvent)
+                        {
+                            case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
+                                shouldPause = true;
+                                break;
+                        
+                            case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
+                                shouldPause = false;
+                                break;
+                        }
                         break;
                     }
 
@@ -170,6 +168,10 @@ public static class Program
                         
                 }
             }
+
+            // Pause the emulation if any of the triggers caused a pause.
+            if (shouldPause) emulator.Pause(); 
+            else             emulator.Resume();
             
             // ---- ImGUI Frame ----
             SDL_GetWindowSize(window, out windowWidth, out windowHeight);
