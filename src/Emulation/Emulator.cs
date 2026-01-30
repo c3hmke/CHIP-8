@@ -26,6 +26,7 @@ public class Emulator (IVirtualMachine machine, int cpuHz = 700, int refreshHz =
     /// </summary>
     public event Action? OnFrame;
     
+    
     /// <summary>
     /// Advances the emulation based on elapsed wall-clock time.
     /// Called once per host frame / loop iteration.
@@ -61,6 +62,18 @@ public class Emulator (IVirtualMachine machine, int cpuHz = 700, int refreshHz =
             OnFrame?.Invoke();
             _frameAccumulator = 0;
         }
+    }
+    
+    /// <summary>
+    /// Resets the emulation and the underlying VM.
+    /// </summary>
+    public void Reset()
+    {
+        machine.Reset();
+        _cpuAccumulator = _timerAccumulator = _frameAccumulator = 0;
+
+        if (_paused) _clock.Reset();
+        else         _clock.Restart();
     }
     
     /// <summary>

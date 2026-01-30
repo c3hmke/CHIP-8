@@ -111,14 +111,23 @@ public static class Program
         QuadRenderer   renderer  = new ();
 
         
-        // Load initial ROM
-        machine.Reset();
-        machine.LoadProgram(File.ReadAllBytes(ROMs[currentROM]));
-        
+        // --------------------------------------------------------------------
+        //      Emulator
+        // --------------------------------------------------------------------
+        Emulator emulator = new (machine);
+
+        void LoadRom(int romIndex)
+        {
+            currentROM = romIndex;
+            emulator.Reset();
+            machine.LoadProgram(File.ReadAllBytes(ROMs[currentROM]));
+        }
+
+        if (ROMs.Length > 0) LoadRom(currentROM);
+
         // --------------------------------------------------------------------
         //      Main program loop
         // --------------------------------------------------------------------
-        Emulator emulator = new (machine);
         
         var   stopwatch = System.Diagnostics.Stopwatch.StartNew();
         float lastTime  = 0f;
@@ -177,10 +186,20 @@ public static class Program
             // ---- Draw UI ----
             if (ImGui.BeginMainMenuBar())
             {
-                if (ImGui.BeginMenu("Foo"))
+                if (ImGui.BeginMenu("ROMs"))
                 {
-                    if (ImGui.MenuItem("Bar")) { }
-                    if (ImGui.MenuItem("Baz")) { }
+                    if (ROMs.Length == 0)
+                    {
+                        ImGui.MenuItem("No ROMs found", string.Empty, false, false);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < ROMs.Length; i++)
+                        {
+                            if (ImGui.MenuItem(ROMNames[i], string.Empty, i == currentROM))
+                                LoadRom(i);
+                        }
+                    }
                     
                     ImGui.EndMenu();
                 }
