@@ -65,6 +65,16 @@ public sealed class QuadRenderer : IDisposable
     private readonly int _uTexture;
     private readonly int _uScale;   // vec2
     private readonly int _uOffset;  // vec2
+    private readonly int _uOnColor;
+    private readonly int _uOffColor;
+
+    private const float OnR = 47f / 255f;
+    private const float OnG = 59f / 255f;
+    private const float OnB = 31f / 255f;
+
+    private const float OffR = 201f / 255f;
+    private const float OffG = 219f / 255f;
+    private const float OffB = 167f / 255f;
 
     // Fullscreen quad in NDC, with UVs.
     // We'll scale+offset in the vertex shader to preserve aspect ratio.
@@ -86,6 +96,8 @@ public sealed class QuadRenderer : IDisposable
         _uTexture = GL.GetUniformLocation(_program, "uTexture");
         _uScale   = GL.GetUniformLocation(_program, "uScale");
         _uOffset  = GL.GetUniformLocation(_program, "uOffset");
+        _uOnColor = GL.GetUniformLocation(_program, "uOnColor");
+        _uOffColor = GL.GetUniformLocation(_program, "uOffColor");
 
         _vao = GL.GenVertexArray();
         _vbo = GL.GenBuffer();
@@ -147,6 +159,8 @@ public sealed class QuadRenderer : IDisposable
         GL.Uniform1(_uTexture, 0);
         GL.Uniform2(_uScale, scaleX, scaleY);
         GL.Uniform2(_uOffset, offsetX, offsetY);
+        GL.Uniform3(_uOnColor, OnR, OnG, OnB);
+        GL.Uniform3(_uOffColor, OffR, OffG, OffB);
 
         GL.ActiveTexture(TextureUnit.Texture0);
         GL.BindTexture(TextureTarget.Texture2D, textureId);
@@ -187,11 +201,15 @@ public sealed class QuadRenderer : IDisposable
         #version 330 core
         in vec2 v_uv;
         uniform sampler2D uTexture;
+        uniform vec3 uOnColor;
+        uniform vec3 uOffColor;
         out vec4 out_color;
 
         void main()
         {
-            out_color = texture(uTexture, vec2(v_uv.x, 1.0 - v_uv.y));
+            float value = texture(uTexture, vec2(v_uv.x, 1.0 - v_uv.y)).r;
+            vec3 color = mix(uOffColor, uOnColor, value);
+            out_color = vec4(color, 1.0);
         }
     """;
 }

@@ -31,7 +31,7 @@ public static class Program
     private const int MenuH    = 20;
     private const int ScreenW  = 64;
     private const int ScreenH  = 32;
-    private const int Scale    = 16;
+    private const int Scale    = 8;
     
     private static void Main(string[] args)
     {
@@ -87,7 +87,7 @@ public static class Program
 
         GL.LoadBindings(new SDL_GL_BindingsContext());
         GL.Viewport(0, 0, ScreenW * Scale, ScreenH * Scale);
-        GL.ClearColor(0f, 0f, 0f, 1f);
+        GL.ClearColor(201f / 255f, 219f / 255f, 167f / 255f, 1f);
         
         FullscreenQuad.Init();
         
