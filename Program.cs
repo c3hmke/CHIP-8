@@ -123,7 +123,7 @@ public static class Program
         var   stopwatch = System.Diagnostics.Stopwatch.StartNew();
         float lastTime  = 0f;
 
-        bool shouldPause = false;
+        bool pauseForFocus = false;
         
         while (true)
         {
@@ -146,11 +146,11 @@ public static class Program
                         switch (e.window.windowEvent)
                         {
                             case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST:
-                                shouldPause = true;
+                                pauseForFocus = true;
                                 break;
                         
                             case SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
-                                shouldPause = false;
+                                pauseForFocus = false;
                                 break;
                         }
                         break;
@@ -169,10 +169,6 @@ public static class Program
                 }
             }
 
-            // Pause the emulation if any of the triggers caused a pause.
-            if (shouldPause) emulator.Pause(); 
-            else             emulator.Resume();
-            
             // ---- ImGUI Frame ----
             SDL_GetWindowSize(window, out windowWidth, out windowHeight);
             imGui.UpdateFrame(delta, windowWidth, windowHeight);
@@ -191,6 +187,14 @@ public static class Program
 
                 ImGui.EndMainMenuBar();
             }
+
+            bool pauseForPopup = ImGui.IsPopupOpen(string.Empty, ImGuiPopupFlags.AnyPopupId);
+
+            // Pause the emulation if any of the triggers caused a pause.
+            if (pauseForFocus || pauseForPopup) 
+                emulator.Pause();
+            else
+                emulator.Resume();
 
             // ---- Update Emulation ----
             emulator.Update();
