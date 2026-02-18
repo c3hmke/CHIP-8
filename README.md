@@ -31,6 +31,21 @@ Distro Packages:
  - Fedora: `sudo dnf dotnet-sdk-8.0 SDL2-devel mesa-libGL`
  - Arch: `sudo pacman -S dotnet-sdk sdl2 mesa`
 
+### Windows Build & Runtime
+- .NET SDK 8+ to build
+- SDL2 runtime library ( SDL2.dll )
+- OpenGL drivers ( provided by GPU vendor )
+
+Build a self-contained release ( output: bin/Release/net8.0/win-x64/publish )
+```sh
+dotnet restore && dotnet publish -c Release -r win-x64 --self-contained true
+```
+
+Manual SDL2 setup:
+ - Download SDL2 Development Libraries for Windows (x64) from https://www.libsdl.org/
+ - Extract `SDL2.dll` from the `lib\x64` folder
+ - Copy `SDL2.dll` next to the published executable ( `bin/Release/net8.0/win-x64/publish` )
+
 ## Notes
 
 Opcodes 8XY6 and 8XYE use the Vy register instead of Vx. <br/>
