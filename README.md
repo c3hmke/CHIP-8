@@ -14,6 +14,34 @@ CHIP-8 was designed to be easy to program for and to use less memory than other 
 
 Interpreters have been made for many devices, such as home computers, microcomputers, graphing calculators, mobile phones, and video game consoles.
 
+## Download and Run
+
+Prebuilt Linux and Windows builds are available from the project's GitHub releases page.
+
+1. Download the zip file for your platform from the releases:
+   - `CHIP-8-linux-x64.zip` for 64-bit Linux
+   - `CHIP-8-win-x64.zip` for 64-bit Windows
+2. Extract the zip file.
+3. Run the executable from the extracted folder.
+
+On Linux:
+```sh
+./CHIP-8
+```
+
+If the executable bit was not preserved when extracting the zip, run:
+```sh
+chmod +x CHIP-8
+./CHIP-8
+```
+
+On Windows, double-click `CHIP-8.exe` or run:
+```powershell
+.\CHIP-8.exe
+```
+
+Keep the executable in the extracted folder with the included `ROMs` directory and native library files. The Windows build includes `SDL2.dll`, and the Linux build includes `libSDL2.so`; OpenGL graphics drivers are still required on both platforms.
+
 ## Requirements
 
 ### Linux Build & Runtime
